@@ -43,7 +43,6 @@ cap = cv2.VideoCapture('snooker-game.mp4')
 if (cap.isOpened() == False):
   print("Error opening video stream or file")
 
-time.sleep(2.0)
 tableLower = (47, 100, 100)
 tableUpper = (67, 255, 255)
 
@@ -60,8 +59,8 @@ lower = {
 upper = {
   'red':    (186,255,255),
   'yellow': (50,255,255),
-  'brown':  (48,174,143),
   'green':  (86,255,255),
+  'brown':  (48,174,143),
   'blue':   (117,255,255),
   'pink':   (169,192,255),
   'black':  (120,120,75),
@@ -97,8 +96,11 @@ finalMask = 0
 
 totalReds = 15
 redCount = 0
+yellowCount = 0
 initialFrame = 700
 frameCheck = 5
+currentBallCount = 0
+
 cap.set(cv2.CAP_PROP_POS_FRAMES, initialFrame)
 
 # Read until video is completed
@@ -106,6 +108,7 @@ while True:
   # Captures the live stream frame-by-frame
     _, frame = cap.read()
 
+    # Width: 600 - Height: 337
     frame = imutils.resize(frame, width=600)
     # Crop video to only check the table and not the game UI
     frame = frame[25:315, 25:585]
@@ -131,7 +134,7 @@ while True:
     
     i = 0
     for key, value in upper.items():
-
+        contours = 0
         kernal = np.ones((6,6), np.uint8)
         mask = cv2.inRange(hsv, lower[key], upper[key])
         mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernal)
@@ -140,11 +143,14 @@ while True:
         # They are currently not in as they're not needed at this stage and just slow things down
         # mask = cv2.GaussianBlur(mask, (7,7), 0)
 
-        finalMask += mask
+        finalMask = mask
         # thresh = cv2.threshold(finalMask, 127, 255, 0)[-1]
         
+        # BUG: The length of the contours is not been reset after the ball colours been counted
+        # So 15 reds are counted, the yellow count is 16, brown 17 etc. 
         contours = cv2.findContours(finalMask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)[-2]
         currentColor = colours[key]
+        # print(key + ': ' + str(len(contours)))
         for c in contours:
 
             # The following code is only needed to show what has been detected
@@ -160,6 +166,11 @@ while True:
             if(checkBallCount):
                 if(key == 'red'):
                     redCount += 1
+                    print('Counting red')
+                # BUG: The yellows count is always increasing for some reason
+                elif (key == 'yellow'):
+                    print('Counting yellow')
+                    yellowCount += 1
 
         # print('redCount' + str(redCount))
         # print('totalReds' + str(totalReds))
@@ -184,7 +195,7 @@ while True:
 
 
     # May not be needed
-    res = cv2.bitwise_and(frame,frame, mask = finalMask)
+    # res = cv2.bitwise_and(frame,frame, mask = finalMask)
 
     # Display test for number of red balls
     cv2.putText(frame, str(redCount), (50, 50), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255,255,255), 2)
