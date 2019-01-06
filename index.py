@@ -7,21 +7,25 @@ import mysql.connector
 import pymysql
 import paramiko
 import pandas as pd
+import os
 from paramiko import SSHClient
 from sshtunnel import SSHTunnelForwarder
 from os.path import expanduser
+from dotenv import load_dotenv
+
+load_dotenv()
 
 home = expanduser('~')
-mypkey = paramiko.RSAKey.from_private_key_file(home + '/.ssh/id_rsa', password='billion2468')
+mypkey = paramiko.RSAKey.from_private_key_file(home + '/.ssh/id_rsa', password=os.getenv('priv_key_password'))
 
 # Add these to env file
-sql_hostname = '127.0.0.1'
-sql_username = 'root'
-sql_password = 'billion2468'
-sql_main_database = 'Snooker_Scoring_System'
+sql_hostname = os.getenv('sql_hostname')
+sql_username = os.getenv('sql_username')
+sql_password = os.getenv('sql_password')
+sql_main_database = os.getenv('sql_main_database')
 sql_port = 3306
-ssh_host = '178.62.84.70'
-ssh_user = 'dan'
+ssh_host = os.getenv('ssh_host')
+ssh_user = os.getenv('ssh_user')
 ssh_port = 22
 
   # query = '''SELECT * FROM tempTable;'''
@@ -33,6 +37,7 @@ ssh_port = 22
 # cap = cv2.VideoCapture('/Users/dan/Lady-Cannings.mp4')
 
 cap = cv2.VideoCapture('snooker-game.mp4')
+# cap = cv2.VideoCapture('/Users/dan/Downloads/snooker-game2.mp4')
 
 # Check if camera opened successfully
 if (cap.isOpened() == False):
@@ -100,8 +105,10 @@ cap.set(cv2.CAP_PROP_POS_FRAMES, initialFrame)
 while True:
   # Captures the live stream frame-by-frame
     _, frame = cap.read()
+
     frame = imutils.resize(frame, width=600)
-    frame2 = imutils.resize(frame, width=600)
+    # Crop video to only check the table and not the game UI
+    frame = frame[25:315, 25:585]
     finalMask = 0
     finalMaskTable = 0
     finalEdges = 0
@@ -112,7 +119,10 @@ while True:
     currentFrame = cap.get(cv2.CAP_PROP_POS_FRAMES)
     checkBallCount = False
 
-    # Every 5 frames give the system the ability to check the current ball count on the table
+    # Every 5 frames give the system the ability to check the current ball count on the tabl
+    # The first frame to be processed is always 1 + the initial frame and as a result, there will be no inital check of the current red balls
+    # And redCount will be set to 0 as a result which also means the if statement to check whether to update the database will also be true
+    # So check if current frame is 1 + initalFrame will seed the inital redCount and not update the database prematurely
     if((currentFrame == initialFrame + 1) or currentFrame % frameCheck == 0):
         redCount = 0
         checkBallCount = True
@@ -125,6 +135,9 @@ while True:
         kernal = np.ones((6,6), np.uint8)
         mask = cv2.inRange(hsv, lower[key], upper[key])
         mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernal)
+
+        # Add this and the threshold function to get make the results more circular 
+        # They are currently not in as they're not needed at this stage and just slow things down
         # mask = cv2.GaussianBlur(mask, (7,7), 0)
 
         finalMask += mask
@@ -136,18 +149,18 @@ while True:
 
             # The following code is only needed to show what has been detected
             # Can be removed in final version to improve fps
-            M = cv2.moments(c)
-            cX = int(M["m10"] / M["m00"])
-            cY = int(M["m01"] / M["m00"])
+            # M = cv2.moments(c)
+            # cX = int(M["m10"] / M["m00"])
+            # cY = int(M["m01"] / M["m00"])
 
-            cv2.circle(frame, (cX, cY), 5, (255,255,255), -1)
+            # cv2.circle(frame, (cX, cY), 4, (255,255,255), -1)
 
 
             # cv2.putText(frame, key + " ball", (cX -25, cY - 25), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255,255,255), 2)
             if(checkBallCount):
                 if(key == 'red'):
                     redCount += 1
-                    
+
         # print('redCount' + str(redCount))
         # print('totalReds' + str(totalReds))
 
