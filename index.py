@@ -159,7 +159,7 @@ while True:
     # Width: 600 - Height: 337
     frame = imutils.resize(frame, width=600)
     # Crop video to only check the table and not the game UI
-    # frame = frame[25:315, 25:585]
+    frame = frame[25:245, 65:535]
     finalMask = 0
     finalMaskTable = 0
     finalEdges = 0
