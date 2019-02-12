@@ -1,3 +1,5 @@
+# Do a trello board thing
+
 import cv2
 import numpy as np
 import argparse
@@ -34,7 +36,6 @@ ssh_port = 22
 
 # Create a VideoCapture object and read from input file
 # If the input is the camera, pass 0 instead of the video file name
-# cap = cv2.VideoCapture('/Users/dan/Lady-Cannings.mp4')
 
 # cap = cv2.VideoCapture("udp://127.0.0.1:10000")
 cap = cv2.VideoCapture('game2.mov')
@@ -48,37 +49,51 @@ if (cap.isOpened() == False):
 tableLower = (47, 100, 100)
 tableUpper = (67, 255, 255)
 lower = {
-#   #'red':    (166,84,141), // Video game colours
-  'red':    (0,176,154),
-# #   'yellow': (23,59,119), // Video game colours
-  'yellow': (11,139,215),
-# #   'green':  (66,122,129), // Video game colours
-  'green':  (57,70,89),
-# #   'brown':  (0,29,0), // Video game colours
-  'brown':  (0,41,49),
-# #   'blue':   (97,100,117), // Video game colours
-  'blue':   (87,122,111),
-# #   'pink':   (141,40,200), // Video game colours
-  'pink':   (169,76,149),
-# #   'black':  (53,26,0), // Video game colours
-  'black':  (103,56,16),
+#   'red':    (166,84,141),  # Video game colours
+#   'red':    (0,176,154), # HSV
+  'red':    (0,171,84), # YCrCb
+#   'yellow': (23,59,119), # Video game colours
+#   'yellow': (11,139,215), # HSV
+  'yellow': (170,145,20), # YCrCb
+# #   'green':  (66,122,129), # Video game colours
+#   'green':  (57,70,89), # HSV 
+  'green':  (91,104,101), # YCrCb
+# #   'brown':  (0,29,0), # Video game colours
+#   'brown':  (0,41,49), # HSV
+  'brown':  (50,132,103), # YCrCb
+# #   'blue':   (97,100,117), # Video game colours
+#   'blue':   (87,122,111), # HSV
+  'blue':   (60,78,147), # YCrCb
+# #   'pink':   (141,40,200), # Video game colours
+#   'pink':   (169,76,149), # HSV
+  'pink':   (96,242,150), # YCrCb
+# #   'black':  (53,26,0), # Video game colours
+#   'black':  (103,56,16), # HSV
+  'black':  (103,56,16), # YCrCb
 }
 
 upper = {
-# #   'red':    (186,255,255), // Video game colours
-  'red':    (35,237,208),
-# #   'yellow': (50,255,255), // Video game colours
-  'yellow': (169,227,255),
-# #   'green':  (86,255,255), // Video game colours
-  'green':  (82,96,138),
-# #   'brown':  (48,174,143), // Video game colours
-  'brown':  (13,204,145),
-# #   'blue':   (117,255,255), // Video game colours
-  'blue':   (162,255,255),
-# #   'pink':   (169,192,255), // Video game colours
-  'pink':   (176,199,255),
-# #   'black':  (120,120,75), // Video game colours
-  'black':  (133,156,88),
+#   'red':    (179,255,255), # Video game colours
+#   'red':    (35,237,208), # HSV
+  'red':    (85,255,255), # YCrCb
+#   'yellow': (50,255,255), # Video game colours
+#   'yellow': (169,227,255), # HSV
+  'yellow': (254,220,73), # YCrCb
+# #   'green':  (86,255,255), # Video game colours
+#   'green':  (82,96,138), # HSV
+  'green':  (138,115,132), # YCrCb
+# #   'brown':  (48,174,143), # Video game colours
+#   'brown':  (13,204,145), # HSV
+  'brown':  (103,166,122), # YCrCb
+# #   'blue':   (117,255,255), # Video game colours
+#   'blue':   (162,255,255), # HSV
+  'blue':   (126,112,196), # YCrCb
+# #   'pink':   (169,192,255), # Video game colours
+#   'pink':   (176,199,255), # HSV
+  'pink':   (185,242,150), # YCrCb
+# #   'black':  (120,120,75), # Video game colours
+#   'black':  (133,156,88), # HSV
+  'black':  (133,156,88), # YCrCb
 }
 
 colours = {
@@ -117,40 +132,48 @@ initialFrame = 0
 frameCheck = 5
 currentBallCount = 0
 
-cap.set(cv2.CAP_PROP_POS_FRAMES, initialFrame)
-# img = cv2.imread('red.jpg')
-# gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-# blur = cv2.GaussianBlur(img, (9,9), 0)
 
-# hsv = cv2.cvtColor(blur, cv2.COLOR_BGR2HSV)
-# kernal = np.ones((8,8), np.uint8)
-# mask = cv2.inRange(hsv, lower['red'], upper['red'])
-# mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernal)
-# mask = cv2.erode(mask, kernal, iterations=4)
+img = cv2.imread('table.png')
 
-# # Add this and the threshold function to get make the results more circular 
-# # They are currently not in as they're not needed at this stage and just slow things down
-# mask = cv2.GaussianBlur(mask, (7,7), 0)
+blur = cv2.GaussianBlur(img, (9,9), 0)
 
-# finalMask = mask
-# thresh = cv2.threshold(finalMask, 20, 255, 0)[-1]
+hsv = cv2.cvtColor(blur, cv2.COLOR_BGR2HSV)
 
-# contours = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)[-2]
-# currentColor = colours['red']
-# # print(key + ': ' + str(len(contours)))
-# for c in contours:
+kernal = np.ones((8,8), np.uint8)
+mask = cv2.inRange(hsv, lower['red'], upper['red'])
 
-#     # The following code is only needed to show what has been detected
-#     # Can be removed in final version to improve fps
-#     M = cv2.moments(c)
-#     if M["m00"] != 0:
-#         cX = int(M["m10"] / M["m00"])
-#         cY = int(M["m01"] / M["m00"])
-#     else:
-#         cX, cY = 0, 0
+mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernal)
 
-#     cv2.circle(img, (cX, cY), 10, (255,255,255), -1)
+# Add this and the threshold function to get make the results more circular 
+# They are currently not in as they're not needed at this stage and just slow things down
+mask = cv2.GaussianBlur(mask, (7,7), 0)
+
+finalMask = mask
+
+thresh = cv2.threshold(finalMask, 20, 255, 0)[-1]
+
+contours = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)[-2]
+currentColor = colours['red']
+# print(key + ': ' + str(len(contours)))
+for c in contours:
+
+    # The following code is only needed to show what has been detected
+    # Can be removed in final version to improve fps
+    M = cv2.moments(c)
+    if M["m00"] != 0:
+        cX = int(M["m10"] / M["m00"])
+        cY = int(M["m01"] / M["m00"])
+    else:
+        cX, cY = 0, 0
+
+    cv2.circle(img, (cX, cY), 10, (255,255,255), -1)
+
+
+img = imutils.resize(img, width=600)
 # cv2.imshow('result', img)
+
+
+cap.set(cv2.CAP_PROP_POS_FRAMES, initialFrame)
 # Read until video is completed
 while True:
     # Captures the live stream frame-by-frame
@@ -165,12 +188,13 @@ while True:
     finalEdges = 0
 
     blur = cv2.GaussianBlur(frame, (9,9), 0)
-    hsv = cv2.cvtColor(blur, cv2.COLOR_BGR2HSV)
+    hsv = cv2.cvtColor(blur, cv2.COLOR_BGR2YCrCb)
+    # cv2.imshow('res', hsv)
 
     currentFrame = cap.get(cv2.CAP_PROP_POS_FRAMES)
     checkBallCount = False
 
-    # Every 5 frames give the system the ability to check the current ball count on the tabl
+    # Every 5 frames give the system the ability to check the current ball count on the table
     # The first frame to be processed is always 1 + the initial frame and as a result, there will be no inital check of the current red balls
     # And redCount will be set to 0 as a result which also means the if statement to check whether to update the database will also be true
     # So check if current frame is 1 + initalFrame will seed the inital redCount and not update the database prematurely
@@ -185,6 +209,7 @@ while True:
     for key, value in upper.items():
         kernal = np.ones((8,8), np.uint8)
         mask = cv2.inRange(hsv, lower[key], upper[key])
+        # cv2.imshow('test', mask)
         mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernal)
 
         # Add this and the threshold function to get make the results more circular 
@@ -192,9 +217,9 @@ while True:
         mask = cv2.GaussianBlur(mask, (7,7), 0)
 
         finalMask = mask
-        # thresh = cv2.threshold(finalMask, 127, 255, 0)[-1]
-        
-        contours = cv2.findContours(finalMask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)[-2]
+        thresh = cv2.threshold(finalMask, 127, 255, 0)[-1]
+        contours = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)[-2]
+        # contours = cv2.findContours(finalMask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)[-2]
         currentColor = colours[key]
         # print(key + ': ' + str(len(contours)))
         i = 0
@@ -236,16 +261,16 @@ while True:
             totalReds =- numberOfRedsPotted
             
             # Connect to database using ssh keys 
-            with SSHTunnelForwarder( (ssh_host, ssh_port), ssh_username=ssh_user, ssh_pkey=mypkey, remote_bind_address=(sql_hostname, sql_port)) as tunnel:
-                conn = pymysql.connect(host='127.0.0.1', user=sql_username, passwd=sql_password, db=sql_main_database, port=tunnel.local_bind_port)
+            # with SSHTunnelForwarder( (ssh_host, ssh_port), ssh_username=ssh_user, ssh_pkey=mypkey, remote_bind_address=(sql_hostname, sql_port)) as tunnel:
+            #     conn = pymysql.connect(host='127.0.0.1', user=sql_username, passwd=sql_password, db=sql_main_database, port=tunnel.local_bind_port)
 
-                with conn.cursor() as cursor:
-                    # Simple query for that just increments the points count
-                    query = '''UPDATE tempTable SET points = points + %s WHERE player_name = "dan";'''
-                    cursor.execute(query, (pointsScored))
+            #     with conn.cursor() as cursor:
+            #         # Simple query for that just increments the points count
+            #         query = '''UPDATE tempTable SET points = points + %s WHERE player_name = "dan";'''
+            #         cursor.execute(query, (pointsScored))
                 
-                conn.commit()
-                conn.close()
+            #     conn.commit()
+            #     conn.close()
 
 
     # May not be needed
@@ -256,7 +281,6 @@ while True:
 
 
     cv2.imshow('res', frame)
-    # cv2.imshow('resTable', resTable)
 
     if cv2.waitKey(25) & 0xFF == ord('q'):
       break

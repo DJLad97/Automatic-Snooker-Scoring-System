@@ -4,3 +4,8 @@ snooker.png
 .env
 .vscode/
 test-stuff/
+*.png
+*.jpg
+*.mov
+*.mp4
+scoring-ui/node_modules
