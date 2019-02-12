@@ -8,4 +8,5 @@ test-stuff/
 *.jpg
 *.mov
 *.mp4
+*.avi
 scoring-ui/node_modules
