@@ -6,7 +6,6 @@
 - Need to determine what colour ball is currently active e.g Red or coloured ball
 - Detect if invalid ball has been hit 
 ##### Tracking:
-- Create a "confidence system" where if the ball is out for a certain number of frames it is counted as potted. (Try   and factor in speed I.e ball is lost after moving)
 - Use a binary image as input for optical flow 
 - Look into flow field for own tracking
 ### App
@@ -27,4 +26,8 @@ Game stats, e.g fouls, highest break, shot time
 - Get complete prototype working, with score showing on app 
 - When detecting pink, look for the pink as it will always start in the same place
 
-Trello board: https://trello.com/b/fotFIF7U/dissertation
+## General Notes
+- Talk about the different approaches used to create the system (e.g lighting, tracking algorithms, colour spaces)
+- Explain why I have used the numbers that I've used to check frames in the confidence system and not any other number (Run some tests against other numbers to justify my decision for choosing those numbers)
+- Generate graph for the confidence number
+- Trello board: https://trello.com/b/fotFIF7U/dissertation
