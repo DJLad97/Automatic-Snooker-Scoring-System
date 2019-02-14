@@ -251,7 +251,7 @@ while True:
                 cv2.circle(frame, (cX, cY), 5, (255,255,255), -1)
                 cv2.putText(frame, str(i), (cX, cY), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,255,0), 2)
 
-                connectedContours = Falsev2.putText(frame, str(key), (cX -25, cY - 25), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255,255,255), 2)
+                connectedContours = False
 
             i += 1
             if(checkBallCount):
