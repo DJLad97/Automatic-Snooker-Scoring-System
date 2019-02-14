@@ -1,11 +1,17 @@
 {
   "name": "scoring-ui",
   "version": "0.1.0",
+  "proxy": "https://ukce.danjscott.co.uk/api",
   "private": true,
   "dependencies": {
+    "axios": "^0.18.0",
+    "bootstrap": "^4.3.0",
+    "digit-roll-react": "^1.1.0",
     "react": "^16.8.1",
     "react-dom": "^16.8.1",
-    "react-scripts": "2.1.5"
+    "react-reel": "^1.2.3",
+    "react-scripts": "2.1.5",
+    "reactstrap": "^7.1.0"
   },
   "scripts": {
     "start": "react-scripts start",

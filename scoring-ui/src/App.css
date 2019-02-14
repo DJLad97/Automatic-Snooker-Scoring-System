@@ -1,5 +1,5 @@
 .App {
-  text-align: center;
+  /* text-align: center; */
 }
 
 .App-logo {
@@ -21,6 +21,26 @@
 
 .App-link {
   color: #61dafb;
+}
+
+.main {
+  color: #fff;
+}
+
+.points-counter {
+  font-size: calc(100px + 2vmin);
+}
+
+.player-name {
+  font-size: calc(70px + 2vmin);
+}
+
+.score-block {
+  margin-bottom: 50px;
+}
+
+.row {
+  text-align: center;
 }
 
 @keyframes App-logo-spin {
