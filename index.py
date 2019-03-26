@@ -16,6 +16,9 @@ import pymysql
 import paramiko
 import pandas as pd
 import os
+import asyncio
+import websockets
+from collections import deque
 from paramiko import SSHClient
 from sshtunnel import SSHTunnelForwarder
 from os.path import expanduser
@@ -97,7 +100,7 @@ def computerVisionSystem():
     #   'black':  (103,56,16), # YCrCb (old)
     #   'black':  (0,96,84), # YCrCb
     # 'white': (223,108,118) #YCrCb
-    # 'white': (0,0,192) #HSV
+    'white': (0,0,200) #HSV
     }
 
     upper = {
@@ -139,7 +142,17 @@ def computerVisionSystem():
     #   'black':  (133,156,88), # YCrCb (old)
     #   'black':  (49,126,179), # YCrCb
     # 'white': (255,129,137) #YCrCb
-    # 'white': (66,37,255) # HSV
+    'white': (78,40,255) # HSV
+    }
+
+    ballCoords = {
+        'white': deque(maxlen=32),
+        'yellow': deque(maxlen=32),
+        # 'green': deque(maxlen=32),
+        # 'brown': deque(maxlen=32),
+        # 'blue': deque(maxlen=32),
+        # 'pink': deque(maxlen=32),
+        # 'black': deque(maxlen=32)
     }
 
     colours = {
@@ -179,6 +192,11 @@ def computerVisionSystem():
     yellowPotConfidence = 0
     yellowCount = 0
     yellowPotted = False
+    previousYellowX = 0
+    previousYellowY = 0
+    yellowCoords = deque(maxlen=32)
+    yellowMoving = False
+
 
     previousGreenCount = 0
     greenPotConfidence = 0
@@ -199,8 +217,15 @@ def computerVisionSystem():
     pinkPotConfidence = 0
     pinkCount = 0
     pinkPotted = False
+
+    whiteCoords = deque(maxlen=32)
+
     
-    initialFrame = 4100
+    cX = 0
+    cY = 0
+
+    # initialFrame = 1737 # Just before yellow is potted
+    initialFrame = 5250
     # Explain why I check every frames and not any other number
     # Run some tests against other numbers
     frameCheck = 5
@@ -273,10 +298,25 @@ def computerVisionSystem():
     
     # cv2.imshow('img test', img)
 
+    # instruction = websocket.recv()
+    # print(instruction)
+    # with SSHTunnelForwarder( (ssh_host, ssh_port), ssh_username=ssh_user, ssh_pkey=mypkey, remote_bind_address=(sql_hostname, sql_port)) as tunnel:
+    #     conn = pymysql.connect(host='127.0.0.1', user=sql_username, passwd=sql_password, db=sql_main_database, port=tunnel.local_bind_port)
+
+    #     with conn.cursor() as cursor:
+    #         query = '''SELECT * FROM players;'''
+    #         cursor.execute(query)
+    #         result = cursor.fetchall()
+    #         print(result)
+        
+    #     conn.commit()
+    #     conn.close()
     # Read until video is completed
     while True:
         # Captures the live stream frame-by-frame
         _, frame = cap.read()
+        # if(instruction == 'change player'):
+            # print('switching players')
 
         # Width: 600 - Height: 337
         frame = imutils.resize(frame, width=600)
@@ -290,7 +330,6 @@ def computerVisionSystem():
         cv2.circle(frame, (452,202), 5, (0,0,0), 19) # Bottom Right
         cv2.circle(frame, (239,207), 4, (0,0,0), 19) # Bottom Middle
         cv2.circle(frame, (25,205), 5, (0,0,0), 19) # Bottom left
-
 
 
         finalMask = 0
@@ -338,8 +377,8 @@ def computerVisionSystem():
 
             # Morphology doesn't appear to be required with the new lighting
             mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernal)
-            if(key == 'red'):
-                cv2.imshow(key, mask)
+            # if(key == 'white'):
+                # cv2.imshow(key, mask)
 
             # Add the blur and the threshold function to get make the results more circular 
             # They are currently not in as they're not needed at this stage and just slow things down
@@ -364,16 +403,40 @@ def computerVisionSystem():
                 # if(i == len(contours) - 1):
                     # previousRedCount = redCount + 1
                 # else:
-
+                
                 numberOfBallsConnected = 0
+                if(key == 'yellow'):
+                    previousYellowX = cX
+                    previousYellowY = cY
                 # The following code is only needed to show what has been detected
                 # Can be removed in final version to improve fps
                 M = cv2.moments(c)
                 if M["m00"] != 0:
                     cX = int(M["m10"] / M["m00"])
                     cY = int(M["m01"] / M["m00"])
+
                 else:
                     cX, cY = 0, 0
+
+                # if(key != 'red' and key != 'green' and key != 'brown' and key != 'blue' and key != 'pink'):
+                center = (cX, cY)
+                ballCoords['white'].appendleft(center)
+                # .appendleft(center)
+
+                # if(key == 'yellow'):
+                #     print('yellow x: ' + str(cX))
+                #     print('yellow y: ' + str(cY))
+
+                # if(cX != previousYellowX):
+                #     print('current x: ' + str(cX))
+                #     print('previous x: ' + str(previousYellowX))
+                #     print('yellow has moved')
+
+                # if(key == 'yellow'):
+                #     print('yellow x: ' + str(cX))
+                #     print('previous yellow x: ' + str(cX))
+                #     print('yellow y: ' + str(cY))
+                #     print('previous yellow y: ' + str(cY))
 
                 # average perimeter = 38.6685714 (hardcoded for this window width, ball size etc, )
                 # print(cv2.arcLength(c, True))
@@ -407,6 +470,16 @@ def computerVisionSystem():
                         # cv2.circle(frame, (cX, cY), 5, (255,255,255), -1)
                         # cv2.putText(frame, str(key), (cX, cY), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,255,0), 2)
                         pass
+                elif (key == 'white'):
+                    cv2.circle(frame, (cX, cY), 5, (255,255,255), -1)
+                    cv2.putText(frame, str(key), (cX, cY), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,255,0), 2)
+                    center = (cX, cY)
+                    whiteCoords.appendleft(center)
+                elif (key == 'yellow'):
+                    cv2.circle(frame, (cX, cY), 5, (255,255,255), -1)
+                    cv2.putText(frame, str(key), (cX, cY), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,255,0), 2)
+                    center = (cX, cY)
+                    yellowCoords.appendleft(center)
                 else: 
                     cv2.circle(frame, (cX, cY), 5, (255,255,255), -1)
                     cv2.putText(frame, str(key), (cX, cY), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,255,0), 2)
@@ -432,6 +505,8 @@ def computerVisionSystem():
                         redCount += 1
                     if(key == 'yellow'):
                         yellowCount += 1
+                        previousYellowX = cX
+                        previousYellowY = cY
 
                     if(key == 'green'):
                         greenCount += 1
@@ -445,8 +520,38 @@ def computerVisionSystem():
                     if(key == 'pink'):
                         pinkCount += 1
 
+        # print(whiteCoords)
+        # for key, value in ballCoords.items():
+            # if(len(ballCoords['white']) >= 15):
+            #     dX = ballCoords['white'][0][0] - ballCoords['white'][10][0]
+            #     dY = ballCoords['white'][0][1] - ballCoords['white'][10][1]
+            #     if(np.abs(dX) >= 10 or np.abs(dY) >= 10):
+            #         print('white' + ' ball is moving')
+            #     else:
+            #         print('white' + ' ball is not moving')
+            
+        # if(len(whiteCoords) >= 15):
+        #     dX = whiteCoords[0][0] - whiteCoords[10][0]
+        #     dY = whiteCoords[0][1] - whiteCoords[10][1]
+        #     if(np.abs(dX) >= 10 or np.abs(dY) >= 10):
+        #         print('white ball is moving')
+        #     else:
+        #         print('white ball is not moving')
+
+        if(len(yellowCoords) >= 15):
+            dX = yellowCoords[0][0] - yellowCoords[10][0]
+            dY = yellowCoords[0][1] - yellowCoords[10][1]
+            if(np.abs(dX) >= 10 or np.abs(dY) >= 10):
+                # print('yellow ball is moving')
+                yellowMoving = True
+            else:
+                # print('yellow ball is not moving')
+                yellowMoving = False
 
         if(checkBallCount):
+            # if(len(yellowCoords) >= 32):
+                # yellowCoords.clear()
+            # print(yellowCoords)
             # Every 5 frames check if the number of reds detected has changed
             if(redCount != previousRedCount):
                 # If it has (and it's not the first frame otherwise the confidence value will be incorrect) increment the confidence
@@ -533,7 +638,7 @@ def computerVisionSystem():
                         conn.close()
                 ballPottedConfidence = 0
             
-            if(yellowCount < 1 and yellowPotConfidence <= 2 and not yellowPotted):
+            if(yellowCount < 1 and yellowPotConfidence <= 2 and not yellowPotted and yellowMoving):
                 print('yellow potted')
                 yellowPotted = True
                 yellowPotConfidence = 0
@@ -629,9 +734,9 @@ def computerVisionSystem():
         cv2.imshow('res', frame)
         # cv2.imshow('mask', finalMask)
 
-        if cv2.waitKey(25) & 0xFF == ord('n'):
-            currentFrame = cap.get(cv2.CAP_PROP_POS_FRAMES)
-            cap.set(cv2.CAP_PROP_POS_FRAMES, currentFrame + 500)
+        # if cv2.waitKey(25) & 0xFF == ord('n'):
+        #     currentFrame = cap.get(cv2.CAP_PROP_POS_FRAMES)
+        #     cap.set(cv2.CAP_PROP_POS_FRAMES, currentFrame + 500)
         # if cv2.waitKey(25) & 0xFF == ord('p'):
         #     currentFrame = cap.get(cv2.CAP_PROP_POS_FRAMES)
         #     cap.set(cv2.CAP_PROP_POS_FRAMES, currentFrame - 500)
@@ -686,7 +791,6 @@ def getAverageAndMaxPerimeter(contours):
     return averageSize, maxPerimeter
 
 def main():
-    print("testing main function")
     computerVisionSystem()
 
 if __name__ == "__main__": main()
