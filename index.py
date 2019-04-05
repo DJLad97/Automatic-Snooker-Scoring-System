@@ -25,9 +25,8 @@ from os.path import expanduser
 from dotenv import load_dotenv
 
 
-def computerVisionSystem():
+def computerVisionSystem(gameId):
     load_dotenv()
-
     home = expanduser('~')
     mypkey = paramiko.RSAKey.from_private_key_file(home + '/.ssh/id_rsa', password=os.getenv('priv_key_password'))
 
@@ -148,11 +147,21 @@ def computerVisionSystem():
     ballCoords = {
         'white': deque(maxlen=32),
         'yellow': deque(maxlen=32),
-        # 'green': deque(maxlen=32),
-        # 'brown': deque(maxlen=32),
+        'green': deque(maxlen=32),
+        'brown': deque(maxlen=32),
         # 'blue': deque(maxlen=32),
         # 'pink': deque(maxlen=32),
         # 'black': deque(maxlen=32)
+    }
+
+    ballMoving = {
+        'white': False,
+        'yellow': False,
+        'green': False,
+        'brown': False,
+        'blue': False,
+        'pink': False,
+        'black': False
     }
 
     colours = {
@@ -224,8 +233,10 @@ def computerVisionSystem():
     cX = 0
     cY = 0
 
-    # initialFrame = 1737 # Just before yellow is potted
-    initialFrame = 5250
+    # initialFrame = 1600 # Just before yellow is potted
+    initialFrame = 500 
+    # initialFrame = 5250
+    # initialFrame = 9000
     # Explain why I check every frames and not any other number
     # Run some tests against other numbers
     frameCheck = 5
@@ -304,10 +315,10 @@ def computerVisionSystem():
     #     conn = pymysql.connect(host='127.0.0.1', user=sql_username, passwd=sql_password, db=sql_main_database, port=tunnel.local_bind_port)
 
     #     with conn.cursor() as cursor:
-    #         query = '''SELECT * FROM players;'''
-    #         cursor.execute(query)
-    #         result = cursor.fetchall()
-    #         print(result)
+    #         selectQuery = '''SELECT active_player FROM games WHERE id = %s;'''
+    #         cursor.execute(selectQuery, (gameId))
+    #         activePlayer = cursor.fetchone()[0]
+    #         print(activePlayer)
         
     #     conn.commit()
     #     conn.close()
@@ -316,7 +327,7 @@ def computerVisionSystem():
         # Captures the live stream frame-by-frame
         _, frame = cap.read()
         # if(instruction == 'change player'):
-            # print('switching players')
+            # print('switching games')
 
         # Width: 600 - Height: 337
         frame = imutils.resize(frame, width=600)
@@ -377,8 +388,8 @@ def computerVisionSystem():
 
             # Morphology doesn't appear to be required with the new lighting
             mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernal)
-            # if(key == 'white'):
-                # cv2.imshow(key, mask)
+            if(key == 'pink'):
+                cv2.imshow(key, mask)
 
             # Add the blur and the threshold function to get make the results more circular 
             # They are currently not in as they're not needed at this stage and just slow things down
@@ -418,10 +429,10 @@ def computerVisionSystem():
                 else:
                     cX, cY = 0, 0
 
-                # if(key != 'red' and key != 'green' and key != 'brown' and key != 'blue' and key != 'pink'):
-                center = (cX, cY)
-                ballCoords['white'].appendleft(center)
-                # .appendleft(center)
+                if(key != 'red' and key != 'blue' and key != 'pink'):
+                    center = (cX, cY)
+                    ballCoords[key].appendleft(center)
+                # ballCoords['white'].appendleft(center)
 
                 # if(key == 'yellow'):
                 #     print('yellow x: ' + str(cX))
@@ -470,16 +481,16 @@ def computerVisionSystem():
                         # cv2.circle(frame, (cX, cY), 5, (255,255,255), -1)
                         # cv2.putText(frame, str(key), (cX, cY), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,255,0), 2)
                         pass
-                elif (key == 'white'):
-                    cv2.circle(frame, (cX, cY), 5, (255,255,255), -1)
-                    cv2.putText(frame, str(key), (cX, cY), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,255,0), 2)
-                    center = (cX, cY)
-                    whiteCoords.appendleft(center)
-                elif (key == 'yellow'):
-                    cv2.circle(frame, (cX, cY), 5, (255,255,255), -1)
-                    cv2.putText(frame, str(key), (cX, cY), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,255,0), 2)
-                    center = (cX, cY)
-                    yellowCoords.appendleft(center)
+                # elif (key == 'white'):
+                #     cv2.circle(frame, (cX, cY), 5, (255,255,255), -1)
+                #     cv2.putText(frame, str(key), (cX, cY), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,255,0), 2)
+                #     center = (cX, cY)
+                #     whiteCoords.appendleft(center)
+                # elif (key == 'yellow'):
+                #     cv2.circle(frame, (cX, cY), 5, (255,255,255), -1)
+                #     cv2.putText(frame, str(key), (cX, cY), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,255,0), 2)
+                #     center = (cX, cY)
+                #     yellowCoords.appendleft(center)
                 else: 
                     cv2.circle(frame, (cX, cY), 5, (255,255,255), -1)
                     cv2.putText(frame, str(key), (cX, cY), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,255,0), 2)
@@ -521,15 +532,18 @@ def computerVisionSystem():
                         pinkCount += 1
 
         # print(whiteCoords)
-        # for key, value in ballCoords.items():
-            # if(len(ballCoords['white']) >= 15):
-            #     dX = ballCoords['white'][0][0] - ballCoords['white'][10][0]
-            #     dY = ballCoords['white'][0][1] - ballCoords['white'][10][1]
-            #     if(np.abs(dX) >= 10 or np.abs(dY) >= 10):
-            #         print('white' + ' ball is moving')
-            #     else:
-            #         print('white' + ' ball is not moving')
+        for key, value in ballCoords.items():
+            if(len(ballCoords[key]) >= 15):
+                dX = ballCoords[key][0][0] - ballCoords[key][10][0]
+                dY = ballCoords[key][0][1] - ballCoords[key][10][1]
+                if(np.abs(dX) >= 10 or np.abs(dY) >= 10):
+                    # print(key + ' ball is moving')
+                    ballMoving[key] = True
+                else:
+                    # print(key + ' ball is not moving')
+                    ballMoving[key] = False
             
+        # print(ballMoving[])
         # if(len(whiteCoords) >= 15):
         #     dX = whiteCoords[0][0] - whiteCoords[10][0]
         #     dY = whiteCoords[0][1] - whiteCoords[10][1]
@@ -538,15 +552,15 @@ def computerVisionSystem():
         #     else:
         #         print('white ball is not moving')
 
-        if(len(yellowCoords) >= 15):
-            dX = yellowCoords[0][0] - yellowCoords[10][0]
-            dY = yellowCoords[0][1] - yellowCoords[10][1]
-            if(np.abs(dX) >= 10 or np.abs(dY) >= 10):
-                # print('yellow ball is moving')
-                yellowMoving = True
-            else:
-                # print('yellow ball is not moving')
-                yellowMoving = False
+        # if(len(yellowCoords) >= 15):
+        #     dX = yellowCoords[0][0] - yellowCoords[10][0]
+        #     dY = yellowCoords[0][1] - yellowCoords[10][1]
+        #     if(np.abs(dX) >= 10 or np.abs(dY) >= 10):
+        #         # print('yellow ball is moving')
+        #         yellowMoving = True
+        #     else:
+        #         # print('yellow ball is not moving')
+        #         yellowMoving = False
 
         if(checkBallCount):
             # if(len(yellowCoords) >= 32):
@@ -607,9 +621,21 @@ def computerVisionSystem():
                     conn = pymysql.connect(host='127.0.0.1', user=sql_username, passwd=sql_password, db=sql_main_database, port=tunnel.local_bind_port)
 
                     with conn.cursor() as cursor:
+                        # selectQuery = '''SELECT active_player FROM games WHERE id = %s;'''
+                        # cursor.execute(selectQuery, (gameId))
+                        # activePlayer = cursor.fetchone()[0]
+                        activePlayer = getActivePlayer(cursor, gameId)
+                        print(activePlayer)
+
+                        if(activePlayer == 'player_one'): 
+                            query = '''UPDATE games SET player_one_points = player_one_points - %s WHERE id = %s;'''
+                        else:
+                            query = '''UPDATE games SET player_two_points = player_two_points - %s WHERE id = %s;'''
+
+                        print(query)
+                        cursor.execute(query, (numberOfRedsPotted, gameId))
                         # Simple query for that just decrements the points count
-                        query = '''UPDATE players SET points = points - %s WHERE name = "dan";'''
-                        cursor.execute(query, (numberOfRedsPotted))
+                        # query = '''UPDATE games SET points = points - %s WHERE id = %s;'''
                     
                     conn.commit()
                     conn.close()
@@ -630,15 +656,24 @@ def computerVisionSystem():
                         conn = pymysql.connect(host='127.0.0.1', user=sql_username, passwd=sql_password, db=sql_main_database, port=tunnel.local_bind_port)
 
                         with conn.cursor() as cursor:
+                            activePlayer = getActivePlayer(cursor, gameId)
+                            print(activePlayer)
+
+                            if(activePlayer == 'player_one'): 
+                                query = '''UPDATE games SET player_one_points = player_one_points + %s WHERE id = %s;'''
+                            else:
+                                query = '''UPDATE games SET player_two_points = player_two_points + %s WHERE id = %s;'''
+
                             # Simple query for that just increments the points count
-                            query = '''UPDATE players SET points = points + %s WHERE name = "dan";'''
-                            cursor.execute(query, (numberOfRedsPotted))
+                            # query = '''UPDATE games SET points = points + %s WHERE id = %s;'''
+                            # query = '''UPDATE games SET player_one_points = points + %s WHERE id = %s;'''
+                            cursor.execute(query, (numberOfRedsPotted, gameId))
                         
                         conn.commit()
                         conn.close()
                 ballPottedConfidence = 0
             
-            if(yellowCount < 1 and yellowPotConfidence <= 2 and not yellowPotted and yellowMoving):
+            if(yellowCount < 1 and yellowPotConfidence <= 2 and not yellowPotted and ballMoving['yellow']):
                 print('yellow potted')
                 yellowPotted = True
                 yellowPotConfidence = 0
@@ -646,15 +681,22 @@ def computerVisionSystem():
                     conn = pymysql.connect(host='127.0.0.1', user=sql_username, passwd=sql_password, db=sql_main_database, port=tunnel.local_bind_port)
 
                     with conn.cursor() as cursor:
+                        activePlayer = getActivePlayer(cursor, gameId)
+                        print(activePlayer)
+
+                        if(activePlayer == 'player_one'): 
+                            query = '''UPDATE games SET player_one_points = player_one_points + 2 WHERE id = %s;'''
+                        else:
+                            query = '''UPDATE games SET player_two_points = player_two_points + 2 WHERE id = %s;'''
                         # Simple query for that just decrements the points count
-                        query = '''UPDATE players SET points = points + 2 WHERE name = "dan";'''
-                        cursor.execute(query)
+                        # query = '''UPDATE games SET points = points + 2 WHERE id = %s;'''
+                        cursor.execute(query, (gameId))
                     
                     conn.commit()
                     conn.close()
             yellowPotConfidence = 0
 
-            if(greenCount < 1 and greenPotConfidence <= 2 and not greenPotted):
+            if(greenCount < 1 and greenPotConfidence <= 2 and not greenPotted and ballMoving['green']):
                 print('green potted')
                 greenPotted = True
                 greenPotConfidence = 0
@@ -663,14 +705,24 @@ def computerVisionSystem():
 
                     with conn.cursor() as cursor:
                         # Simple query for that just decrements the points count
-                        query = '''UPDATE players SET points = points + 3 WHERE name = "dan";'''
-                        cursor.execute(query)
+                        # selectQuery = '''SELECT active_player FROM games WHERE id = %s;'''
+                        # cursor.execute(selectQuery)
+                        # result = cursor.fetchall()
+                        activePlayer = getActivePlayer(cursor, gameId)
+                        print(activePlayer)
+
+                        if(activePlayer == 'player_one'): 
+                            query = '''UPDATE games SET player_one_points = player_one_points + 3 WHERE id = %s;'''
+                        else:
+                            query = '''UPDATE games SET player_two_points = player_two_points + 3 WHERE id = %s;'''
+                        # query = '''UPDATE games SET points = points + 3 WHERE id = %s;'''
+                        cursor.execute(query, (gameId))
                     
                     conn.commit()
                     conn.close()
             greenPotConfidence = 0
             
-            if(brownCount < 1 and brownPotConfidence <= 2 and not brownPotted):
+            if(brownCount < 1 and brownPotConfidence <= 2 and not brownPotted and ballMoving['brown']):
                 print('brown potted')
                 brownPotted = True
                 brownPotConfidence = 0
@@ -678,15 +730,22 @@ def computerVisionSystem():
                     conn = pymysql.connect(host='127.0.0.1', user=sql_username, passwd=sql_password, db=sql_main_database, port=tunnel.local_bind_port)
 
                     with conn.cursor() as cursor:
+                        activePlayer = getActivePlayer(cursor, gameId)
+                        print(activePlayer)
+
+                        if(activePlayer == 'player_one'): 
+                            query = '''UPDATE games SET player_one_points = player_one_points + 4 WHERE id = %s;'''
+                        else:
+                            query = '''UPDATE games SET player_two_points = player_two_points + 4 WHERE id = %s;'''
                         # Simple query for that just decrements the points count
-                        query = '''UPDATE players SET points = points + 4 WHERE name = "dan";'''
-                        cursor.execute(query)
+                        # query = '''UPDATE games SET points = points + 4 WHERE id = %s;'''
+                        cursor.execute(query, (gameId))
                     
                     conn.commit()
                     conn.close()
             brownPotConfidence = 0
 
-            if(blueCount < 1 and bluePotConfidence <= 2 and not bluePotted):
+            if(blueCount < 1 and bluePotConfidence <= 2 and not bluePotted and ballMoving['blue']):
                 print('blue potted')
                 bluePotted = True
                 bluePotConfidence = 0
@@ -694,9 +753,16 @@ def computerVisionSystem():
                     conn = pymysql.connect(host='127.0.0.1', user=sql_username, passwd=sql_password, db=sql_main_database, port=tunnel.local_bind_port)
 
                     with conn.cursor() as cursor:
+                        activePlayer = getActivePlayer(cursor, gameId)
+                        print(activePlayer)
+
+                        if(activePlayer == 'player_one'): 
+                            query = '''UPDATE games SET player_one_points = player_one_points + 5 WHERE id = %s;'''
+                        else:
+                            query = '''UPDATE games SET player_two_points = player_two_points + 5 WHERE id = %s;'''
                         # Simple query for that just decrements the points count
-                        query = '''UPDATE players SET points = points + 5 WHERE name = "dan";'''
-                        cursor.execute(query)
+                        # query = '''UPDATE games SET points = points + 5 WHERE id = %s;'''
+                        cursor.execute(query, (gameId))
                     
                     conn.commit()
                     conn.close()
@@ -710,9 +776,16 @@ def computerVisionSystem():
                     conn = pymysql.connect(host='127.0.0.1', user=sql_username, passwd=sql_password, db=sql_main_database, port=tunnel.local_bind_port)
 
                     with conn.cursor() as cursor:
+                        activePlayer = getActivePlayer(cursor, gameId)
+                        print(activePlayer)
+
+                        if(activePlayer == 'player_one'): 
+                            query = '''UPDATE games SET player_one_points = player_one_points + 6 WHERE id = %s;'''
+                        else:
+                            query = '''UPDATE games SET player_two_points = player_two_points + 6 WHERE id = %s;'''
                         # Simple query for that just decrements the points count
-                        query = '''UPDATE players SET points = points + 5 WHERE name = "dan";'''
-                        cursor.execute(query)
+                        # query = '''UPDATE games SET points = points + 6 WHERE id = %s;'''
+                        cursor.execute(query, (gameId))
                     
                     conn.commit()
                     conn.close()
@@ -755,7 +828,7 @@ def computerVisionSystem():
 
         #         with conn.cursor() as cursor:
         #             # Simple query for that just increments the points count
-        #             query = '''UPDATE players SET points = 0 WHERE name = "dan";'''
+        #             query = '''UPDATE games SET points = 0 WHERE id = %s;'''
         #             cursor.execute(query)
                 
         #         conn.commit()
@@ -766,16 +839,16 @@ def computerVisionSystem():
     cap.release()
 
     # Set player score to 0 when exiting app
-    with SSHTunnelForwarder( (ssh_host, ssh_port), ssh_username=ssh_user, ssh_pkey=mypkey, remote_bind_address=(sql_hostname, sql_port)) as tunnel:
-        conn = pymysql.connect(host='127.0.0.1', user=sql_username, passwd=sql_password, db=sql_main_database, port=tunnel.local_bind_port)
+    # with SSHTunnelForwarder( (ssh_host, ssh_port), ssh_username=ssh_user, ssh_pkey=mypkey, remote_bind_address=(sql_hostname, sql_port)) as tunnel:
+    #     conn = pymysql.connect(host='127.0.0.1', user=sql_username, passwd=sql_password, db=sql_main_database, port=tunnel.local_bind_port)
 
-        with conn.cursor() as cursor:
-            # Simple query for that just increments the points count
-            query = '''UPDATE players SET points = 0 WHERE name = "dan";'''
-            cursor.execute(query)
+    #     with conn.cursor() as cursor:
+    #         # Simple query for that just increments the points count
+    #         query = '''UPDATE games SET points = 0 WHERE id = %s;'''
+    #         cursor.execute(query, (gameId))
         
-        conn.commit()
-        conn.close()
+    #     conn.commit()
+    #     conn.close()
 
 def getAverageAndMaxPerimeter(contours):
     averagePeremiter = 0
@@ -790,7 +863,30 @@ def getAverageAndMaxPerimeter(contours):
 
     return averageSize, maxPerimeter
 
+def getActivePlayer(cursor, gameId):
+    selectQuery = '''SELECT active_player FROM games WHERE id = %s;'''
+    cursor.execute(selectQuery, (gameId))
+    activePlayer = cursor.fetchone()[0]
+
+    return activePlayer
+
+async def start(websocket, path):
+    instruction = await websocket.recv()
+    print(f"< {instruction}")
+    data = instruction.split('#')
+    # print(data[1])
+    if(data[0] == 'start'):
+        gameId = data[1]
+        # playerTwo = data[2]
+        computerVisionSystem(gameId)
+    # computerVisionSystem()
+
+
 def main():
-    computerVisionSystem()
+    # computerVisionSystem(1)
+    start_server = websockets.serve(start, 'localhost', 8765)
+
+    asyncio.get_event_loop().run_until_complete(start_server)
+    asyncio.get_event_loop().run_forever()
 
 if __name__ == "__main__": main()
