@@ -248,80 +248,6 @@ def computerVisionSystem(gameId):
 
     cap.set(cv2.CAP_PROP_POS_FRAMES, initialFrame)
 
-
-    # img = cv2.imread('new-light.png')
-    # # img = imutils.resize(img, width=600)
-    # blur = cv2.GaussianBlur(img, (9,9), 0)
-    # hsv = cv2.cvtColor(blur, cv2.COLOR_BGR2HSV)
-    # for key, value in upper.items():
-    #     kernal = np.ones((8,8), np.uint8)
-    #     mask = cv2.inRange(hsv, lower[key], upper[key])
-    #     # mask = cv2.erode(mask, kernal, iterations=1)
-    #     # cv2.imshow('test', mask)
-    #     # mask = cv2.dilate(mask, kernal, iterations=1)
-    #     mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernal)
-    #     # cv2.imshow('mask', mask)
-
-    #     # Add the blur and the threshold function to get make the results more circular 
-    #     # They are currently not in as they're not needed at this stage and just slow things down
-    #     # mask = cv2.GaussianBlur(mask, (7,7), 0)
-    #     # kernal = np.ones((6,6), np.uint8)
-    #     # mask = cv2.erode(mask, kernal, iterations=1)
-    #     finalMask = mask
-    #     # thresh = cv2.threshold(finalMask, 127, 255, 0)[-1]
-    #     # contours = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)[-2]
-    #     contours = cv2.findContours(finalMask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)[-2]
-    #     # print(key + ': ' + str(len(contours)))
-    #     i = 0
-    #     connectedContours = False
-    #     for c in contours:
-    #         # if(i == len(contours) - 1):
-    #             # previousRedCount = redCount + 1
-    #         # else:
-
-    #         numberOfBallsConnected = 0
-    #         # The following code is only needed to show what has been detected
-    #         # Can be removed in final version to improve fps
-    #         M = cv2.moments(c)
-    #         if M["m00"] != 0:
-    #             cX = int(M["m10"] / M["m00"])
-    #             cY = int(M["m01"] / M["m00"])
-    #         else:
-    #             cX, cY = 0, 0
-
-    #         # average perimeter = 38.6685714 (hardcoded for this window width, ball size etc, )
-    #         # print(cv2.arcLength(c, True))
-    #         i += 1
-    #         currentContourSize = cv2.arcLength(c, True)
-    #         # The largest contour size is around 40 so just add a bit more 
-    #         # if(currentContourSize > 42):
-    #         #     cv2.circle(img, (cX, cY), 15, (255,0,0), -1)
-    #         #     cv2.putText(img, str(i), (cX, cY), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,255,), 2)
-
-    #         #     connectedContours = True
-    #         #     numberOfBallsConnected = currentContourSize / 38.6685714
-    #         #     # Subtract one as if we don't, we end up counting the one big connected contor plus the actual number of balls
-    #         #     numberOfBallsConnected = int(round(numberOfBallsConnected)) - 1
-    #         # else:
-    #         cv2.circle(img, (cX, cY), 15, (255,255,255), -1)
-    #         cv2.putText(img, str(key), (cX, cY), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,255,0), 2)
-
-    
-    # cv2.imshow('img test', img)
-
-    # instruction = websocket.recv()
-    # print(instruction)
-    # with SSHTunnelForwarder( (ssh_host, ssh_port), ssh_username=ssh_user, ssh_pkey=mypkey, remote_bind_address=(sql_hostname, sql_port)) as tunnel:
-    #     conn = pymysql.connect(host='127.0.0.1', user=sql_username, passwd=sql_password, db=sql_main_database, port=tunnel.local_bind_port)
-
-    #     with conn.cursor() as cursor:
-    #         selectQuery = '''SELECT active_player FROM games WHERE id = %s;'''
-    #         cursor.execute(selectQuery, (gameId))
-    #         activePlayer = cursor.fetchone()[0]
-    #         print(activePlayer)
-        
-    #     conn.commit()
-    #     conn.close()
     # Read until video is completed
     while True:
         # Captures the live stream frame-by-frame
@@ -383,13 +309,10 @@ def computerVisionSystem(gameId):
             kernal = np.ones((5,5), np.uint8)
             mask = cv2.inRange(hsv, lower[key], upper[key])
             # mask = cv2.erode(mask, kernal, iterations=1)
-            # cv2.imshow('test', mask)
             # mask = cv2.dilate(mask, kernal, iterations=1)
-
             # Morphology doesn't appear to be required with the new lighting
             mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernal)
-            if(key == 'pink'):
-                cv2.imshow(key, mask)
+            # cv2.imshow(key, mask)
 
             # Add the blur and the threshold function to get make the results more circular 
             # They are currently not in as they're not needed at this stage and just slow things down
@@ -432,22 +355,7 @@ def computerVisionSystem(gameId):
                 if(key != 'red' and key != 'blue' and key != 'pink'):
                     center = (cX, cY)
                     ballCoords[key].appendleft(center)
-                # ballCoords['white'].appendleft(center)
 
-                # if(key == 'yellow'):
-                #     print('yellow x: ' + str(cX))
-                #     print('yellow y: ' + str(cY))
-
-                # if(cX != previousYellowX):
-                #     print('current x: ' + str(cX))
-                #     print('previous x: ' + str(previousYellowX))
-                #     print('yellow has moved')
-
-                # if(key == 'yellow'):
-                #     print('yellow x: ' + str(cX))
-                #     print('previous yellow x: ' + str(cX))
-                #     print('yellow y: ' + str(cY))
-                #     print('previous yellow y: ' + str(cY))
 
                 # average perimeter = 38.6685714 (hardcoded for this window width, ball size etc, )
                 # print(cv2.arcLength(c, True))
@@ -464,46 +372,14 @@ def computerVisionSystem(gameId):
                         numberOfBallsConnected = currentContourSize / averagePeremiter
                         # numberOfBallsConnected = currentContourSize / 38.6685714
                         # Subtract one as if we don't, we end up counting the one big connected contor plus the actual number of balls
-                        # fraction, whole = math.modf(numberOfBallsConnected)
-                        # print("connected balls before: " + str(numberOfBallsConnected))   
-                        # print("current size: " + str(currentContourSize))
-                        # print("fraction: " + str(fraction))   
-                        # if(fraction >= 0.5):
                         numberOfBallsConnected = int(round(numberOfBallsConnected)) - 1
-                        # else:
-                        #     numberOfBallsConnected = int(round(numberOfBallsConnected))
-                        
-                        # print("connected balls after: " + str(numberOfBallsConnected))
-                        # numberOfBallsConnected = int(round(numberOfBallsConnected))
-                        # print(numberOfBallsConnected)
-
                     else:
                         # cv2.circle(frame, (cX, cY), 5, (255,255,255), -1)
                         # cv2.putText(frame, str(key), (cX, cY), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,255,0), 2)
                         pass
-                # elif (key == 'white'):
-                #     cv2.circle(frame, (cX, cY), 5, (255,255,255), -1)
-                #     cv2.putText(frame, str(key), (cX, cY), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,255,0), 2)
-                #     center = (cX, cY)
-                #     whiteCoords.appendleft(center)
-                # elif (key == 'yellow'):
-                #     cv2.circle(frame, (cX, cY), 5, (255,255,255), -1)
-                #     cv2.putText(frame, str(key), (cX, cY), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,255,0), 2)
-                #     center = (cX, cY)
-                #     yellowCoords.appendleft(center)
                 else: 
                     cv2.circle(frame, (cX, cY), 5, (255,255,255), -1)
                     cv2.putText(frame, str(key), (cX, cY), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,255,0), 2)
-                    # pass
-                    # if(key == 'pink'):
-                    #     cv2.putText(frame, str(key), (cX, cY), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255,0,255), 2)
-                    # else: 
-                    #     cv2.putText(frame, str(key), (cX, cY), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,255,0), 2)
-                        
-                # cv2.circle(frame, (cX, cY), 5, (255,255,255), -1)
-                # cv2.putText(frame, str(i), (cX, cY), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,255,0), 2)
-
-                    # connectedContours = False
 
                 i += 1
                 if(checkBallCount):
@@ -543,29 +419,7 @@ def computerVisionSystem(gameId):
                     # print(key + ' ball is not moving')
                     ballMoving[key] = False
             
-        # print(ballMoving[])
-        # if(len(whiteCoords) >= 15):
-        #     dX = whiteCoords[0][0] - whiteCoords[10][0]
-        #     dY = whiteCoords[0][1] - whiteCoords[10][1]
-        #     if(np.abs(dX) >= 10 or np.abs(dY) >= 10):
-        #         print('white ball is moving')
-        #     else:
-        #         print('white ball is not moving')
-
-        # if(len(yellowCoords) >= 15):
-        #     dX = yellowCoords[0][0] - yellowCoords[10][0]
-        #     dY = yellowCoords[0][1] - yellowCoords[10][1]
-        #     if(np.abs(dX) >= 10 or np.abs(dY) >= 10):
-        #         # print('yellow ball is moving')
-        #         yellowMoving = True
-        #     else:
-        #         # print('yellow ball is not moving')
-        #         yellowMoving = False
-
         if(checkBallCount):
-            # if(len(yellowCoords) >= 32):
-                # yellowCoords.clear()
-            # print(yellowCoords)
             # Every 5 frames check if the number of reds detected has changed
             if(redCount != previousRedCount):
                 # If it has (and it's not the first frame otherwise the confidence value will be incorrect) increment the confidence
@@ -817,23 +671,6 @@ def computerVisionSystem(gameId):
         if cv2.waitKey(25) & 0xFF == ord('q'):
             break
 
-        # if cv2.waitKey(25) & 0xFF == ord('r'):
-        #     totalReds = 10
-        #     predictedRedCount = 10
-        #     numberOfRedsPotted = 0
-        #     ballPottedConfidence = 0
-
-        #     with SSHTunnelForwarder( (ssh_host, ssh_port), ssh_username=ssh_user, ssh_pkey=mypkey, remote_bind_address=(sql_hostname, sql_port)) as tunnel:
-        #         conn = pymysql.connect(host='127.0.0.1', user=sql_username, passwd=sql_password, db=sql_main_database, port=tunnel.local_bind_port)
-
-        #         with conn.cursor() as cursor:
-        #             # Simple query for that just increments the points count
-        #             query = '''UPDATE games SET points = 0 WHERE id = %s;'''
-        #             cursor.execute(query)
-                
-        #         conn.commit()
-        #         conn.close()
-
     cv2.destroyAllWindows()
      # Connect to database using ssh keys 
     cap.release()
@@ -883,7 +720,6 @@ async def start(websocket, path):
 
 
 def main():
-    # computerVisionSystem(1)
     start_server = websockets.serve(start, 'localhost', 8765)
 
     asyncio.get_event_loop().run_until_complete(start_server)
