@@ -19,7 +19,8 @@ export default class App extends React.Component {
 			gameId: 0,
 			showScores: false,
 			playerOneActive: true,
-			playerTwoActive: false
+			playerTwoActive: false,
+			websocketServerIp: ''
 		}
 	}
 	
@@ -77,21 +78,24 @@ export default class App extends React.Component {
 			headers: {'Access-Control-Allow-Origin': '*'}
 		};
 
-		axios.post('https://ukce.danjscott.co.uk/api/game', {}, config)
+		axios.get('https://ukce.danjscott.co.uk/api/game')
 			.then((res) => {
+				console.log(res.data.id);
+				console.log(res.data.vision_system_ip);
 				this.setState({
 					playerOneName: playerOne, 
 					playerTwoName: playerTwo,
 					activePlayer: 'player_one',
 					gameId: res.data.id,
-					showScores: true
+					showScores: true,
+					websocketServerIp: res.data.vision_system_ip
 				});
 			});
 
 	}
 
 	start = () => {
-		let connection = new WebSocket('ws://10.65.193.181:8765');
+		let connection = new WebSocket('ws://' + this.state.websocketServerIp + ':8765');
 		let msg = 'start#' + this.state.gameId;
 		// alert(msg);
 		connection.onopen = () => {
@@ -101,6 +105,22 @@ export default class App extends React.Component {
 			setInterval(this.getPoints, 3500);
 
 		}
+	}
+
+	endGame = () => {
+		this.setState({
+			players: [],
+			playerOneName: '',
+			playerOnePoints: 0,
+			playerTwoName: '',
+			playerTwoPoints: 0,
+			activePlayer: '',
+			gameId: 0,
+			showScores: false,
+			playerOneActive: true,
+			playerTwoActive: false,
+			websocketServerIp: ''
+		})
 	}
 
 	render() {
@@ -138,7 +158,7 @@ export default class App extends React.Component {
 								</View>
 								<View style={styles.endBtn}>
 									<Button
-										onPress={this.changePlayer}
+										onPress={this.endGame}
 										style={styles.btn}
 										title="End Game"
 										color="#c73434"
