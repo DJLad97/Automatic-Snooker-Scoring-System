@@ -4,9 +4,17 @@ snooker.png
 .env
 .vscode/
 test-stuff/
+# scoring-ui-mobile-app/
 *.png
 *.jpg
 *.mov
 *.mp4
 *.avi
 scoring-ui/node_modules
+scoring-ui-mobile-app/node_modules/**/*
+scoring-ui-mobile-app/.expo/*
+scoring-ui-mobile-app/npm-debug.*
+scoring-ui-mobile-app/*.jks
+scoring-ui-mobile-app/*.p12
+scoring-ui-mobile-app/*.key
+scoring-ui-mobile-app/*.mobileprovision
