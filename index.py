@@ -20,7 +20,9 @@ import asyncio
 import websockets
 import requests
 import socket
-import matplotlib.pyplot as plt 
+import matplotlib
+matplotlib.use("pdf")
+from matplotlib import pyplot as plt
 from collections import deque
 from paramiko import SSHClient
 from sshtunnel import SSHTunnelForwarder
@@ -29,19 +31,6 @@ from dotenv import load_dotenv
 
 
 def computerVisionSystem(gameId):
-    load_dotenv()
-    home = expanduser('~')
-    mypkey = paramiko.RSAKey.from_private_key_file(home + '/.ssh/id_rsa', password=os.getenv('priv_key_password'))
-
-    # Add these to env file
-    sql_hostname = os.getenv('sql_hostname')
-    sql_username = os.getenv('sql_username')
-    sql_password = os.getenv('sql_password')
-    sql_main_database = os.getenv('sql_main_database')
-    sql_port = 3306
-    ssh_host = os.getenv('ssh_host')
-    ssh_user = os.getenv('ssh_user')
-    ssh_port = 22
 
     # query = '''SELECT * FROM tempTable;'''
     # data = pd.read_sql_query(query, conn)
@@ -99,11 +88,13 @@ def computerVisionSystem(gameId):
     # # #   'black':  (53,26,0), # Video game colours
     # #   'black':  (103,56,16), # HSV (old)
     #   'black':  (65,31,0), # HSV 
+    #   'black':  (101,35,6), # HSV 
     #   'black':  (103,56,16), # YCrCb (old)
     #   'black':  (0,96,84), # YCrCb
     # 'white': (223,108,118) #YCrCb
     'white': (0,0,200) #HSV
     }
+    # Lower bounds: [101  35   6] black
 
     upper = {
     #   'red':    (179,255,255), # Video game colours
@@ -141,19 +132,22 @@ def computerVisionSystem(gameId):
     # # #   'black':  (120,120,75), # Video game colours
     # #   'black':  (133,156,88), # HSV (old)
     #   'black':  (117,127,112), # HSV 
+    #   'black':  (132,141,129), # HSV 
     #   'black':  (133,156,88), # YCrCb (old)
     #   'black':  (49,126,179), # YCrCb
     # 'white': (255,129,137) #YCrCb
     'white': (78,40,255) # HSV
     }
+    # Upper bounds: [132 141 129] black
+
 
     ballCoords = {
         'white': deque(maxlen=32),
         'yellow': deque(maxlen=32),
         'green': deque(maxlen=32),
         'brown': deque(maxlen=32),
-        # 'blue': deque(maxlen=32),
-        # 'pink': deque(maxlen=32),
+        'blue': deque(maxlen=32),
+        'pink': deque(maxlen=32)
         # 'black': deque(maxlen=32)
     }
 
@@ -163,8 +157,8 @@ def computerVisionSystem(gameId):
         'green': False,
         'brown': False,
         'blue': False,
-        'pink': False,
-        'black': False
+        'pink': False
+        # 'black': False
     }
 
     colours = {
@@ -204,6 +198,8 @@ def computerVisionSystem(gameId):
     yellowPotConfidence = 0
     yellowCount = 0
     yellowPotted = False
+    yellowDetectionRate = 0
+
     previousYellowX = 0
     previousYellowY = 0
     yellowCoords = deque(maxlen=32)
@@ -214,6 +210,7 @@ def computerVisionSystem(gameId):
     greenPotConfidence = 0
     greenCount = 0
     greenPotted = False
+    ballDetectionRate = 0
 
     previousBrownCount = 0
     brownPotConfidence = 0
@@ -230,6 +227,11 @@ def computerVisionSystem(gameId):
     pinkCount = 0
     pinkPotted = False
 
+    previousWhiteCount = 0
+    whitePotConfidence = 0
+    whiteCount = 0
+    whitePotted = False
+
     whiteCoords = deque(maxlen=32)
 
     x = []
@@ -239,8 +241,15 @@ def computerVisionSystem(gameId):
     cX = 0
     cY = 0
 
+    # initialFrame = 8325 
+    # initialFrame = 10500
+    # initialFrame = 2500
+    initialFrame = 500
+    # initialFrame = 500
+    # initialFrame = 9000 
+    # initialFrame = 0 
+    frameFromVideoStart = 0
     # initialFrame = 1600 # Just before yellow is potted
-    initialFrame = 500 
     # initialFrame = 5250
     # initialFrame = 9000
     # Explain why I check every frames and not any other number
@@ -284,8 +293,6 @@ def computerVisionSystem(gameId):
         # hsv = cv2.cvtColor(blur, cv2.COLOR_BGR2YCrCb)
         hsv = cv2.cvtColor(blur, cv2.COLOR_BGR2HSV)
 
-        # cv2.imshow('res', hsv)
-
         currentFrame = cap.get(cv2.CAP_PROP_POS_FRAMES)
         # print(currentFrame)
         checkBallCount = False
@@ -300,6 +307,7 @@ def computerVisionSystem(gameId):
         previousBrownCount = brownCount
         previousBlueCount = blueCount
         previousPinkCount = pinkCount
+        previousWhiteCount = whiteCount
         if((currentFrame == initialFrame + 1) or currentFrame % frameCheck == 0):
             redCount = 0
             yellowCount = 0
@@ -307,10 +315,10 @@ def computerVisionSystem(gameId):
             brownCount = 0
             blueCount = 0
             pinkCount = 0
+            whiteCount = 0
             checkBallCount = True
         else:
             checkBallCount = False
-            # previousRedCount = redCount
         for key, value in upper.items():
             kernal = np.ones((5,5), np.uint8)
             mask = cv2.inRange(hsv, lower[key], upper[key])
@@ -329,7 +337,6 @@ def computerVisionSystem(gameId):
             # thresh = cv2.threshold(finalMask, 127, 255, 0)[-1]
             # contours = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)[-2]
             contours = cv2.findContours(finalMask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)[-2]
-            # print(key + ': ' + str(len(contours)))
             i = 0
             
             if(key == "red" and calculateBallSizes):
@@ -340,9 +347,6 @@ def computerVisionSystem(gameId):
 
             connectedContours = False
             for c in contours:
-                # if(i == len(contours) - 1):
-                    # previousRedCount = redCount + 1
-                # else:
                 
                 numberOfBallsConnected = 0
                 if(key == 'yellow'):
@@ -358,17 +362,14 @@ def computerVisionSystem(gameId):
                 else:
                     cX, cY = 0, 0
 
-                if(key != 'red' and key != 'blue' and key != 'pink'):
+                if(key != 'red'):
                     center = (cX, cY)
                     ballCoords[key].appendleft(center)
 
 
-                # average perimeter = 38.6685714 (hardcoded for this window width, ball size etc, )
-                # print(cv2.arcLength(c, True))
                 # TODO: Automatically detect average perimeters and largest contour size
                 if(key == 'red'):
                     currentContourSize = cv2.arcLength(c, True)
-                    # averagePeremiter += currentContourSize
                     # The largest contour size is around 40 so just add a bit more 
                     cv2.circle(frame, (cX, cY), 5, (255,255,255), -1)
                     if(currentContourSize > (averagePeremiter + 5)):
@@ -377,7 +378,6 @@ def computerVisionSystem(gameId):
 
                         connectedContours = True
                         numberOfBallsConnected = currentContourSize / averagePeremiter
-                        # numberOfBallsConnected = currentContourSize / 38.6685714
                         # Subtract one as if we don't, we end up counting the one big connected contor plus the actual number of balls
                         numberOfBallsConnected = int(round(numberOfBallsConnected)) - 1
                     else:
@@ -389,6 +389,7 @@ def computerVisionSystem(gameId):
                     cv2.putText(frame, str(key), (cX, cY), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,255,0), 2)
 
                 i += 1
+                    
                 if(checkBallCount):
                     # When counting the number of balls make sure to reset the ball count at the beginning of the while loop
                     if(key == 'red'):
@@ -413,20 +414,18 @@ def computerVisionSystem(gameId):
                     if(key == 'pink'):
                         pinkCount += 1
 
-        # print(whiteCoords)
+                    if(key == 'white'):
+                        whiteCount += 1
+
         for key, value in ballCoords.items():
             if(len(ballCoords[key]) >= 15):
                 dX = ballCoords[key][0][0] - ballCoords[key][10][0]
                 dY = ballCoords[key][0][1] - ballCoords[key][10][1]
                 if(np.abs(dX) >= 10 or np.abs(dY) >= 10):
-                    # print(key + ' ball is moving')
                     ballMoving[key] = True
                 else:
-                    # print(key + ' ball is not moving')
                     ballMoving[key] = False
         
-        # print('currentFrame: ' + str(currentFrame))
-        # print('red confidence: ' + str(ballPottedConfidence))
 
         if(checkBallCount):
             # Every 5 frames check if the number of reds detected has changed
@@ -468,6 +467,13 @@ def computerVisionSystem(gameId):
             if(pinkCount >= 1):
                 pinkPotted = False
 
+            if(whiteCount != previousWhiteCount):
+                if(currentFrame != initialFrame + 1):
+                    whitePotConfidence += 1
+            if(whiteCount >= 1):
+                whitePotted = False
+
+        # print(whitePotConfidence)
         # Every 50 frames check if a ball has been potted (checking every 50 frames give some time to get a confidence values)
         if(currentFrame % 50 == 0):
             # Predicted red count = 10
@@ -479,31 +485,9 @@ def computerVisionSystem(gameId):
             if(redCount > totalReds):
                 print("false pot detected on " + str(numberOfRedsPotted) + " balls")
                 totalReds += numberOfRedsPotted
+                # With a false pot been detected, we need to update the database and remove points that were added with that false pot
                 updatePoints(gameId, numberOfRedsPotted, True)
 
-                # With a false pot been detected, we need to update the database and remove points that were added with that false pot
-                # with SSHTunnelForwarder( (ssh_host, ssh_port), ssh_username=ssh_user, ssh_pkey=mypkey, remote_bind_address=(sql_hostname, sql_port)) as tunnel:
-                #     conn = pymysql.connect(host='127.0.0.1', user=sql_username, passwd=sql_password, db=sql_main_database, port=tunnel.local_bind_port)
-
-                #     with conn.cursor() as cursor:
-                #         # selectQuery = '''SELECT active_player FROM games WHERE id = %s;'''
-                #         # cursor.execute(selectQuery, (gameId))
-                #         # activePlayer = cursor.fetchone()[0]
-                #         activePlayer = getActivePlayer(cursor, gameId)
-                #         # print(activePlayer)
-
-                #         if(activePlayer == 'player_one'): 
-                #             query = '''UPDATE games SET player_one_points = player_one_points - %s WHERE id = %s;'''
-                #         else:
-                #             query = '''UPDATE games SET player_two_points = player_two_points - %s WHERE id = %s;'''
-
-                #         cursor.execute(query, (numberOfRedsPotted, gameId))
-                #         # Simple query for that just decrements the points count
-                #         # query = '''UPDATE games SET points = points - %s WHERE id = %s;'''
-                    
-                #     conn.commit()
-                #     conn.close()
-                    
                 numberOfRedsPotted = 0
                 totalReds = redCount
             else:
@@ -511,218 +495,82 @@ def computerVisionSystem(gameId):
                 # if the confidence values is less than 2 it means there was little flucation in the redCount so we can be confident a ball may have been potted
                 if(redCount < totalReds and ballPottedConfidence <= 2):
                     print("red potted")
-                    # x.append(currentFrame)
-                    # y.append(ballPottedConfidence)
-                    # plt.plot(x, y, marker='x')
                     numberOfRedsPotted = totalReds - redCount
                     totalReds = (totalReds) - (totalReds - redCount)
                     ballPottedConfidence = 0
-                    updatePoints(gameId, numberOfRedsPotted, False)
-                    # activePlayer = getActivePlayer(gameId)
-                    # data = {
-                    #     'activePlayer': activePlayer,
-                    #     'points': numberOfRedsPotted
-                    # }                    
-                    # res = requests.post('https://ukce.danjscott.co.uk/api/game/update/' + str(gameId), data=data)
-                    # print(res)
-                    # Connect to database using ssh keys 
-                    # with SSHTunnelForwarder( (ssh_host, ssh_port), ssh_username=ssh_user, ssh_pkey=mypkey, remote_bind_address=(sql_hostname, sql_port)) as tunnel:
-                    #     conn = pymysql.connect(host='127.0.0.1', user=sql_username, passwd=sql_password, db=sql_main_database, port=tunnel.local_bind_port)
-
-                    #     with conn.cursor() as cursor:
-                    #         activePlayer = getActivePlayer(cursor, gameId)
-                    #         print(activePlayer)
-
-                    #         if(activePlayer == 'player_one'): 
-                    #             query = '''UPDATE games SET player_one_points = player_one_points + %s WHERE id = %s;'''
-                    #         else:
-                    #             query = '''UPDATE games SET player_two_points = player_two_points + %s WHERE id = %s;'''
-
-                    #         # Simple query for that just increments the points count
-                    #         # query = '''UPDATE games SET points = points + %s WHERE id = %s;'''
-                    #         # query = '''UPDATE games SET player_one_points = points + %s WHERE id = %s;'''
-                    #         cursor.execute(query, (numberOfRedsPotted, gameId))
-                        
-                    #     conn.commit()
-                    #     conn.close()
+                    updatePoints(gameId, numberOfRedsPotted)
+                    # difference = frameFromVideoStart - ballDetectionRate
+                    # ballDetectionRate += difference
+                
                 ballPottedConfidence = 0
             
             if(yellowCount < 1 and yellowPotConfidence <= 2 and not yellowPotted and ballMoving['yellow']):
                 print('yellow potted')
                 yellowPotted = True
                 yellowPotConfidence = 0
-                updatePoints(gameId, 2, False)
+                updatePoints(gameId, 2)
 
-                # with SSHTunnelForwarder( (ssh_host, ssh_port), ssh_username=ssh_user, ssh_pkey=mypkey, remote_bind_address=(sql_hostname, sql_port)) as tunnel:
-                #     conn = pymysql.connect(host='127.0.0.1', user=sql_username, passwd=sql_password, db=sql_main_database, port=tunnel.local_bind_port)
-
-                #     with conn.cursor() as cursor:
-                #         activePlayer = getActivePlayer(cursor, gameId)
-                #         print(activePlayer)
-
-                #         if(activePlayer == 'player_one'): 
-                #             query = '''UPDATE games SET player_one_points = player_one_points + 2 WHERE id = %s;'''
-                #         else:
-                #             query = '''UPDATE games SET player_two_points = player_two_points + 2 WHERE id = %s;'''
-                #         # Simple query for that just decrements the points count
-                #         # query = '''UPDATE games SET points = points + 2 WHERE id = %s;'''
-                #         cursor.execute(query, (gameId))
-                    
-                #     conn.commit()
-                #     conn.close()
             yellowPotConfidence = 0
 
             if(greenCount < 1 and greenPotConfidence <= 2 and not greenPotted and ballMoving['green']):
                 print('green potted')
                 greenPotted = True
                 greenPotConfidence = 0
-                updatePoints(gameId, 3, False)
+                updatePoints(gameId, 3)
 
-                # with SSHTunnelForwarder( (ssh_host, ssh_port), ssh_username=ssh_user, ssh_pkey=mypkey, remote_bind_address=(sql_hostname, sql_port)) as tunnel:
-                #     conn = pymysql.connect(host='127.0.0.1', user=sql_username, passwd=sql_password, db=sql_main_database, port=tunnel.local_bind_port)
-
-                #     with conn.cursor() as cursor:
-                #         # Simple query for that just decrements the points count
-                #         # selectQuery = '''SELECT active_player FROM games WHERE id = %s;'''
-                #         # cursor.execute(selectQuery)
-                #         # result = cursor.fetchall()
-                #         activePlayer = getActivePlayer(cursor, gameId)
-                #         print(activePlayer)
-
-                #         if(activePlayer == 'player_one'): 
-                #             query = '''UPDATE games SET player_one_points = player_one_points + 3 WHERE id = %s;'''
-                #         else:
-                #             query = '''UPDATE games SET player_two_points = player_two_points + 3 WHERE id = %s;'''
-                #         # query = '''UPDATE games SET points = points + 3 WHERE id = %s;'''
-                #         cursor.execute(query, (gameId))
-                    
-                #     conn.commit()
-                #     conn.close()
             greenPotConfidence = 0
             
             if(brownCount < 1 and brownPotConfidence <= 2 and not brownPotted and ballMoving['brown']):
                 print('brown potted')
                 brownPotted = True
                 brownPotConfidence = 0
-                updatePoints(gameId, 4, False)
-                # with SSHTunnelForwarder( (ssh_host, ssh_port), ssh_username=ssh_user, ssh_pkey=mypkey, remote_bind_address=(sql_hostname, sql_port)) as tunnel:
-                #     conn = pymysql.connect(host='127.0.0.1', user=sql_username, passwd=sql_password, db=sql_main_database, port=tunnel.local_bind_port)
+                updatePoints(gameId, 4)
 
-                #     with conn.cursor() as cursor:
-                #         activePlayer = getActivePlayer(cursor, gameId)
-                #         print(activePlayer)
-
-                #         if(activePlayer == 'player_one'): 
-                #             query = '''UPDATE games SET player_one_points = player_one_points + 4 WHERE id = %s;'''
-                #         else:
-                #             query = '''UPDATE games SET player_two_points = player_two_points + 4 WHERE id = %s;'''
-                #         # Simple query for that just decrements the points count
-                #         # query = '''UPDATE games SET points = points + 4 WHERE id = %s;'''
-                #         cursor.execute(query, (gameId))
-                    
-                #     conn.commit()
-                #     conn.close()
             brownPotConfidence = 0
 
             if(blueCount < 1 and bluePotConfidence <= 2 and not bluePotted and ballMoving['blue']):
                 print('blue potted')
                 bluePotted = True
                 bluePotConfidence = 0
-                updatePoints(gameId, 5, False)
+                updatePoints(gameId, 5)
 
-                # with SSHTunnelForwarder( (ssh_host, ssh_port), ssh_username=ssh_user, ssh_pkey=mypkey, remote_bind_address=(sql_hostname, sql_port)) as tunnel:
-                #     conn = pymysql.connect(host='127.0.0.1', user=sql_username, passwd=sql_password, db=sql_main_database, port=tunnel.local_bind_port)
-
-                #     with conn.cursor() as cursor:
-                #         activePlayer = getActivePlayer(cursor, gameId)
-                #         print(activePlayer)
-
-                #         if(activePlayer == 'player_one'): 
-                #             query = '''UPDATE games SET player_one_points = player_one_points + 5 WHERE id = %s;'''
-                #         else:
-                #             query = '''UPDATE games SET player_two_points = player_two_points + 5 WHERE id = %s;'''
-                #         # Simple query for that just decrements the points count
-                #         # query = '''UPDATE games SET points = points + 5 WHERE id = %s;'''
-                #         cursor.execute(query, (gameId))
-                    
-                #     conn.commit()
-                #     conn.close()
             bluePotConfidence = 0
             
-            if(pinkCount < 1 and pinkPotConfidence <= 2 and not pinkPotted):
+            if(pinkCount < 1 and pinkPotConfidence <= 2 and not pinkPotted and ballMoving['pink']):
                 print('pink potted')
                 pinkPotted = True
                 pinkPotConfidence = 0
-                updatePoints(gameId, 6, False)
+                updatePoints(gameId, 6)
 
-                # with SSHTunnelForwarder( (ssh_host, ssh_port), ssh_username=ssh_user, ssh_pkey=mypkey, remote_bind_address=(sql_hostname, sql_port)) as tunnel:
-                #     conn = pymysql.connect(host='127.0.0.1', user=sql_username, passwd=sql_password, db=sql_main_database, port=tunnel.local_bind_port)
-
-                #     with conn.cursor() as cursor:
-                #         activePlayer = getActivePlayer(cursor, gameId)
-                #         print(activePlayer)
-
-                #         if(activePlayer == 'player_one'): 
-                #             query = '''UPDATE games SET player_one_points = player_one_points + 6 WHERE id = %s;'''
-                #         else:
-                #             query = '''UPDATE games SET player_two_points = player_two_points + 6 WHERE id = %s;'''
-                #         # Simple query for that just decrements the points count
-                #         # query = '''UPDATE games SET points = points + 6 WHERE id = %s;'''
-                #         cursor.execute(query, (gameId))
-                    
-                #     conn.commit()
-                #     conn.close()
             pinkPotConfidence = 0
 
-        # May not be needed
-        # res = cv2.bitwise_and(frame,frame, mask = finalMask)
+            if(whiteCount < 1 and whitePotConfidence <= 2 and not whitePotted and ballMoving['white']):
+                print('white potted')
+                whitePotted = True
+                whitePotConfidence = 0
+                updatePoints(gameId, 4, False, True)
 
-        # Display test for number of red balls
-        # cv2.putText(frame, "Yellows detected: " + str(yellowCount), (250, 20), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255,255,255), 2)
-        # cv2.putText(frame, "Pink detected: " + str(pinkCount), (50, 20), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255,0,255), 2)
-        # cv2.putText(frame, "Total Reds: " + str(totalReds), (250, 20), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,0,255), 2)
-        # cv2.putText(frame, "Red Detected: " + str(redCount) + " - " + str(previousRedCount), (10, 20), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,0,255), 2)
-        # cv2.putText(frame, "Pinks Detected: " + str(pinkCount), (10, 20), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,0,255), 2)
-        # cv2.putText(frame, "Balls connected: " + str(numberOfBallsConnected), (10, 20), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,0,255), 2)
+            whitePotConfidence = 0
 
-        x.append(currentFrame)
-        y.append(ballPottedConfidence)
-        plt.plot(x, y, marker='')
-        cv2.imshow('res', frame)
-        # cv2.imshow('mask', finalMask)
-
-        # if cv2.waitKey(25) & 0xFF == ord('n'):
-        #     currentFrame = cap.get(cv2.CAP_PROP_POS_FRAMES)
-        #     cap.set(cv2.CAP_PROP_POS_FRAMES, currentFrame + 500)
-        # if cv2.waitKey(25) & 0xFF == ord('p'):
-        #     currentFrame = cap.get(cv2.CAP_PROP_POS_FRAMES)
-        #     cap.set(cv2.CAP_PROP_POS_FRAMES, currentFrame - 500)
+        cv2.imshow('Computer Vision System', frame)
         
         if cv2.waitKey(25) & 0xFF == ord('q'):
-            # naming the x axis 
-            plt.xlabel('time') 
-            # naming the y axis 
-            plt.ylabel('ball potted confidence') 
-            plt.title('Confidence graph')
-            plt.savefig('confidence-graph.png')
-
             break
+
+        if cv2.waitKey(1) == ord('p'):
+
+            while True:
+                key2 = cv2.waitKey(1) or 0xff
+                cv2.imshow('Computer Vision System', frame)
+
+                if key2 == ord('p'):
+                    break
+        
+        frameFromVideoStart += 1
 
     cv2.destroyAllWindows()
      # Connect to database using ssh keys 
     cap.release()
-
-    # Set player score to 0 when exiting app
-    # with SSHTunnelForwarder( (ssh_host, ssh_port), ssh_username=ssh_user, ssh_pkey=mypkey, remote_bind_address=(sql_hostname, sql_port)) as tunnel:
-    #     conn = pymysql.connect(host='127.0.0.1', user=sql_username, passwd=sql_password, db=sql_main_database, port=tunnel.local_bind_port)
-
-    #     with conn.cursor() as cursor:
-    #         # Simple query for that just increments the points count
-    #         query = '''UPDATE games SET points = 0 WHERE id = %s;'''
-    #         cursor.execute(query, (gameId))
-        
-    #     conn.commit()
-    #     conn.close()
 
 def getAverageAndMaxPerimeter(contours):
     averagePeremiter = 0
@@ -739,6 +587,7 @@ def getAverageAndMaxPerimeter(contours):
 
 def getActivePlayer(gameId):
     res = requests.get('https://ukce.danjscott.co.uk/api/game/active_player/' + str(gameId))
+    print(res.json())
     activePlayer = res.json()['active_player']
     return activePlayer
     # selectQuery = '''SELECT active_player FROM games WHERE id = %s;'''
@@ -747,7 +596,7 @@ def getActivePlayer(gameId):
 
     # return activePlayer
 
-def updatePoints(gameId, points, falsePot):
+def updatePoints(gameId, points, falsePot=False, whitePotted=False):
     activePlayer = getActivePlayer(gameId)
     data = {
         'activePlayer': activePlayer,
@@ -755,14 +604,19 @@ def updatePoints(gameId, points, falsePot):
     }         
     url = 'https://ukce.danjscott.co.uk/api/game/update/' + str(gameId)
     if(falsePot):
-        url += '?falsePot=true'            
-    res = requests.post('https://ukce.danjscott.co.uk/api/game/update/' + str(gameId), data=data)
+        url += '?falsePot=true'    
+    if(whitePotted):
+        url += '?whitePotted=true'     
+    print(url)   
+    print(data)
+    res = requests.post(url, data=data)
     print(res)
 
 async def start(websocket, path):
     instruction = await websocket.recv()
     data = instruction.split('#')
     # print(data[1])
+    data
     if(data[0] == 'start'):
         gameId = data[1]
         # playerTwo = data[2]
@@ -770,7 +624,7 @@ async def start(websocket, path):
         computerVisionSystem(gameId)
 
 def main():
-    # computerVisionSystem(1)
+    # computerVisionSystem(169)
     machineIp = socket.gethostbyname(socket.gethostname()) 
     print(socket.gethostbyname(socket.gethostname()))
     data = {
