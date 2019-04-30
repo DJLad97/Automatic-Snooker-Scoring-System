@@ -43,7 +43,7 @@ class PlayerNameInput extends Component {
                     />
                 </View>
                 {/* <Label for="playerOneName">Player One Name:</Label>
-                <Input type="text" onChange={this.onChange} name="playerOneName" placeholder="Name" />
+                <Input type="text" onChaange={this.onChange} name="playerOneName" placeholder="Name" />
                 <Label for="playerTwoName">Player Two Name:</Label>
                 <Input type="text" onChange={this.onChange} name="playerTwoName" placeholder="Name" />
                 <Button color="primary" onClick={this.submitNames}>Submit</Button> */}

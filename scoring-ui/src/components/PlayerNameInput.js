@@ -21,7 +21,6 @@ class PlayerNameInput extends Component {
         }
         let playerOne = this.state.playerOneName;
         let playerTwo = this.state.playerTwoName;
-        
         this.props.showNextComponent(playerOne, playerTwo);
 
     }
@@ -29,22 +28,25 @@ class PlayerNameInput extends Component {
     render() {
         return (
             <div>
+                <br/>
+                <br/>
+                <br/>
                 <Row>
-                    <Col sm={{span:4, offset:4}}>
+                    <Col xs={{span:4, offset:2}} sm={{span:4, offset:2}}>
                         <Label for="playerOneName">Player One Name:</Label>
                         <Input type="text" onChange={this.onChange} name="playerOneName" placeholder="Name" />
                     </Col>
                 </Row>
                 <Row></Row>
                 <Row>
-                    <Col sm={{span:4, offset:4}}>
+                    <Col xs={{span:4, offset:2}} sm={{span:4, offset:2}}>
                         <Label for="playerTwoName">Player Two Name:</Label>
                         <Input type="text" onChange={this.onChange} name="playerTwoName" placeholder="Name" />
                     </Col>
                 </Row>
                 <br/>
                 <Row>
-                    <Col sm={{span:4, offset:4}}>
+                    <Col xs={{span:4, offset:4}} sm={{span:4, offset:4}}>
                         <Button color="primary" onClick={this.submitNames}>Submit</Button>
                     </Col>
                 </Row>

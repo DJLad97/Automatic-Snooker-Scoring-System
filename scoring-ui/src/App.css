@@ -28,19 +28,38 @@
 }
 
 .points-counter {
-  font-size: calc(100px + 2vmin);
+  font-size: calc(60px + 2vmin);
+}
+
+.points-counter {
+  font-size: calc(60px + 2vmin);
+}
+
+.active {
+  color: #61dafb;
 }
 
 .player-name {
-  font-size: calc(70px + 2vmin);
+  font-size: calc(40px + 2vmin);
 }
 
 .score-block {
-  margin-bottom: 50px;
+  margin-bottom: 20px;
 }
 
 .row {
   text-align: center;
+}
+
+.inc-btn {
+  margin-right: 50px;
+  margin-left: 10px;
+  width: 100px;
+}
+
+.dec-btn {
+  margin: 20px;
+  width: 100px;
 }
 
 @keyframes App-logo-spin {

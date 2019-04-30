@@ -6,6 +6,7 @@ import PlayerScore from './components/PlayerScore';
 import PlayerNameInput from './components/PlayerNameInput';
 
 export default class App extends React.Component {
+	getPointsInterval = 0;
 
 	constructor(props) {
 		super(props);
@@ -22,33 +23,37 @@ export default class App extends React.Component {
 			playerTwoActive: false,
 			websocketServerIp: ''
 		}
+
+		this.adjustScore = this.adjustScore.bind(this);
 	}
 	
 	getPoints = () => {
 		let data = {
 			'activePlayer': this.state.activePlayer
 		}		
-		axios.get('https://ukce.danjscott.co.uk/api/game/player_points/' + this.state.gameId, {params: {'activePlayer': this.state.activePlayer}})
+		console.log('calling get points')
+		axios.get('https://ukce.danjscott.co.uk/api/game/player_points/' + this.state.gameId)
 			.then((res) => {
-				const points = res.data.points;
-				switch(this.state.activePlayer){
-					case 'player_one':
-						this.setState({playerOnePoints: points});
-						break;
-					case 'player_two':
-						this.setState({playerTwoPoints: points});
-						break;
-					default:
-						break;
-				}
-				console.log('active player: ' + this.state.activePlayer)
+				console.log(res.data);
+				// let dbPlayerOnePoints = res.data['player_one_points']; 
+				// let dbPlayerTwoPoints = res.data['player_two_points']; 
+				this.setState({
+					playerOnePoints: res.data['player_one_points'],
+					playerTwoPoints: res.data['player_two_points']
+				});
+				// const points = res.data.points;
+				// console.log('points: ' + points)
+				// switch(this.state.activePlayer){
+				// 	case 'player_one':
+				// 		this.setState({playerOnePoints: points});
+				// 		break;
+				// 	case 'player_two':
+				// 		this.setState({playerTwoPoints: points});
+				// 		break;
+				// 	default:
+				// 		break;
+				// }
 			});
-		
-	
-		// axios.get('https://ukce.danjscott.co.uk/api/player/' + this.state.player[1].id)
-		// 	.then((res) => {
-		// 		this.setState({playerTwoPoints: res.data.points});
-		// 	});
 	}
 
 	changePlayer = () => {
@@ -56,7 +61,7 @@ export default class App extends React.Component {
 			case 'player_one':
 				this.setState({activePlayer: 'player_two'});
 				break;
-			case this.state.playerTwoName:
+			case 'player_two':
 				this.setState({activePlayer: 'player_one'});
 				break;
 			default:
@@ -80,8 +85,6 @@ export default class App extends React.Component {
 
 		axios.get('https://ukce.danjscott.co.uk/api/game')
 			.then((res) => {
-				console.log(res.data.id);
-				console.log(res.data.vision_system_ip);
 				this.setState({
 					playerOneName: playerOne, 
 					playerTwoName: playerTwo,
@@ -92,18 +95,16 @@ export default class App extends React.Component {
 				});
 			});
 
+
 	}
 
 	start = () => {
+		// alert(this.state.websocketServerIp);
 		let connection = new WebSocket('ws://' + this.state.websocketServerIp + ':8765');
 		let msg = 'start#' + this.state.gameId;
-		// alert(msg);
 		connection.onopen = () => {
-			// connection.send('start');
-			// alert(msg)
 			connection.send(msg);
-			setInterval(this.getPoints, 3500);
-
+			this.getPointsInterval = setInterval(this.getPoints, 4000);
 		}
 	}
 
@@ -120,7 +121,51 @@ export default class App extends React.Component {
 			playerOneActive: true,
 			playerTwoActive: false,
 			websocketServerIp: ''
-		})
+		});
+		clearInterval(this.getPointsInterval);
+	}
+
+	async adjustScore(activePlayer, increment){
+		var data = {
+			'activePlayer': activePlayer,
+			'increment': increment
+		}
+
+		res = await axios.post('https://ukce.danjscott.co.uk/api/game/manual_points/'  + this.state.gameId, data)
+		if(res.status === 200){
+			switch(activePlayer){
+				case 'player_one':
+					if(increment){
+						this.setState({
+							playerOnePoints: this.state.playerOnePoints + 1
+						});
+					}
+					else{
+						if(this.state.playerOnePoints > 0){
+							this.setState({
+								playerOnePoints: this.state.playerOnePoints - 1
+							});
+						}
+					}
+					break;
+				case 'player_two':
+					if(increment){
+						this.setState({
+							playerTwoPoints: this.state.playerTwoPoints + 1
+						});
+					}
+					else{
+						if(this.state.playerTwoPoints > 0){
+							this.setState({
+								playerTwoPoints: this.state.playerTwoPoints - 1
+							});
+						}
+					}
+					break;
+				default:
+					break;
+			}
+		}
 	}
 
 	render() {
@@ -137,9 +182,40 @@ export default class App extends React.Component {
 					(this.state.showScores) && (
 						<View>
 							<PlayerScore name={this.state.playerOneName} active={this.state.playerOneActive} score={this.state.playerOnePoints} />
+							<View style={styles.btnContainerTwo}>
+								<View style={styles.btnManualScores}>
+									<Button
+									onPress={() => this.adjustScore('player_one', true)}
+									title="+"
+									color="#f5c537"
+									/>
+								</View>
+								<View style={styles.btnManualScores}>
+									<Button
+										onPress={() => this.adjustScore('player_one', false)}
+										title="-"
+										color="#f5c537"
+									/>
+								</View>
+							</View>
 							<View style={{marginTop: 25, marginBottom: 25}}></View>
 							<PlayerScore name={this.state.playerTwoName} active={this.state.playerTwoActive} score={this.state.playerTwoPoints} />
-
+							<View style={styles.btnContainerTwo}>
+								<View style={styles.btnManualScores}>
+									<Button
+									onPress={() => this.adjustScore('player_two', true)}
+									title="+"
+									color="#f5c537"
+									/>
+								</View>
+								<View style={styles.btnManualScores}>
+									<Button
+										onPress={() => this.adjustScore('player_two', false)}
+										title="-"
+										color="#f5c537"
+									/>
+								</View>
+							</View>
 							<View style={styles.btnContainer}>
 								<View style={styles.btn}>
 									<Button
@@ -182,7 +258,7 @@ const styles = StyleSheet.create({
 	},
 	scoreBlock: {
 		alignItems: 'center',
-		marginTop: 5
+		// marginTop: 5
 	},
 	playerName: {
 		// font-size: calc(100px + 2vmin);
@@ -205,9 +281,22 @@ const styles = StyleSheet.create({
 		justifyContent: 'space-between',
 		paddingTop: 50
 	},
+	btnContainerTwo: {
+		// paddingTop: 25,
+		// paddingBottom: 25,
+		flexWrap: 'wrap', 
+        alignItems: 'flex-start',
+		flexDirection: 'row',
+		// justifyContent: 'space-between',
+	},
 	btn: {
 		margin: 10,
 		width: '40%'
+	},
+	btnManualScores: {
+		margin: 10,
+		marginLeft: 50,
+		width: '30%'
 	},
 	endBtn: {
 		// margin: auto

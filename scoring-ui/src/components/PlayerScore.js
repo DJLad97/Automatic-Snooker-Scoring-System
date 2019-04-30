@@ -6,8 +6,8 @@ const PlayerScore = (props) =>{
     <Row>
         <Col sm={{size:4, offset: 4}}>
             <div className="score-block">
-                <p className="player-name">{props.name}</p>
-                <p className="points-counter">{props.score}</p>
+                <p className={(props.active ? "player-name active" : "player-name")}>{props.name}</p>
+                <p className={(props.active) ? "points-counter active" : "points-counter"}>{props.score}</p>
             </div>
         </Col>
     </Row>

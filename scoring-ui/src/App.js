@@ -1,10 +1,6 @@
 import React, { Component } from 'react';
 import axios from 'axios';
 import { Button, Container, Row, Col } from 'reactstrap';
-// import Websocket from 'react-websocket';
-// import Websocket from 'websocket';
-// import openSocket from 'socket.io-client';
-import DigitRoll from 'digit-roll-react';
 import PlayerScore from './components/PlayerScore';
 import PlayerNameInput from './components/PlayerNameInput';
 import './App.css';
@@ -21,105 +17,40 @@ class App extends Component {
 			playerTwoPoints: 0,
 			activePlayer: '',
 			gameId: 0,
-			showScores: false
-			// socket: openSocket('ws://localhost:8765')
+			showScores: false,
+			playerOneActive: true,
+			playerTwoActive: false,
+			websocketServerIp: ''
 		}
-		
-	}
-	componentDidMount(){
-		// let connection = new WebSocket('ws://localhost:8765');
-		// connection.onopen = () => {
-		// 	connection.send('start');
-		// 	// connection.send('change player');
-			
-		// }
-
-		// this.setPlayerNames();
-		// console.log(this.state.players);
-		// this.readDatabase();
-		// this.getPoints();
-		
+		this.adjustScore = this.adjustScore.bind(this);
 	}
 	
 	getPoints = () => {
-		console.log('calling get points')
 		let data = {
 			'activePlayer': this.state.activePlayer
 		}		
-		axios.get('https://ukce.danjscott.co.uk/api/game/' + this.state.gameId, {params: {'activePlayer': this.state.activePlayer}})
+		console.log('calling get points')
+		axios.get('https://ukce.danjscott.co.uk/api/game/player_points/' + this.state.gameId)
 			.then((res) => {
-				const points = res.data.points;
-				switch(this.state.activePlayer){
-					case 'player_one':
-						this.setState({playerOnePoints: points});
-						break;
-					case 'player_two':
-						this.setState({playerTwoPoints: points});
-						break;
-					default:
-						break;
-				}
-				console.log('active player: ' + this.state.activePlayer)
-			});
-		
-	
-		// axios.get('https://ukce.danjscott.co.uk/api/player/' + this.state.player[1].id)
-		// 	.then((res) => {
-		// 		this.setState({playerTwoPoints: res.data.points});
-		// 	});
-	}
-
-	setPlayerNames = () => {
-		let playerOne = 'Dan';
-		let playerTwo = 'Ronnie';
-
-		axios.get('https://ukce.danjscott.co.uk/api/players/')
-			.then((res) => {
-				console.log(res);
-				const players = res.data;
-				let tempPlayers = [];
-				players.forEach((player, index) => {
-					const playerObj = {
-						'id': player.id,
-						'name': player.name,
-						'points': player.points
-					}
-					tempPlayers.push(playerObj);
-					// console.log(player);
-				})
-				tempPlayers = tempPlayers.reverse();
-				console.log(tempPlayers);
-				this.setState({players: tempPlayers, showScores: true});
-				setInterval(this.getPoints, 3500);
-			});
-
-
-		// axios.get('https://ukce.danjscott.co.uk/api/player/' + playerOne)
-		// 	.then((res) => {
-		// 		this.setState({playerOneName: res.data.name});
-		// 		this.setState({playerOnePoints: res.data.points});
-		// 	});
-
-		// axios.get('https://ukce.danjscott.co.uk/api/player/' + playerTwo)
-		// 	.then((res) => {
-		// 		this.setState({playerTwoName: res.data.name});
-		// 		this.setState({playerTwoPoints: res.data.points});
-		// 	});
-	}
-
-	showNextComponent = (playerOne, playerTwo) => {
-		// this.setState({showScores: true})
-
-		axios.post('https://ukce.danjscott.co.uk/api/game')
-			.then((res) => {
-				// console.log(res);
+				console.log(res.data);
+				// let dbPlayerOnePoints = res.data['player_one_points']; 
+				// let dbPlayerTwoPoints = res.data['player_two_points']; 
 				this.setState({
-					playerOneName: playerOne, 
-					playerTwoName: playerTwo,
-					activePlayer: 'player_one',
-					gameId: res.data.id,
-					showScores: true
+					playerOnePoints: res.data['player_one_points'],
+					playerTwoPoints: res.data['player_two_points']
 				});
+				// const points = res.data.points;
+				// console.log('points: ' + points)
+				// switch(this.state.activePlayer){
+				// 	case 'player_one':
+				// 		this.setState({playerOnePoints: points});
+				// 		break;
+				// 	case 'player_two':
+				// 		this.setState({playerTwoPoints: points});
+				// 		break;
+				// 	default:
+				// 		break;
+				// }
 			});
 	}
 
@@ -128,18 +59,44 @@ class App extends Component {
 			case 'player_one':
 				this.setState({activePlayer: 'player_two'});
 				break;
-			case this.state.playerTwoName:
+			case 'player_two':
 				this.setState({activePlayer: 'player_one'});
 				break;
 			default:
 				break;
 		}
+		this.setState({
+			playerOneActive: !this.state.playerOneActive, 
+			playerTwoActive: !this.state.playerTwoActive
+		});
 
 		axios.post('https://ukce.danjscott.co.uk/api/game/active_player/' + this.state.gameId)
 	}
 
+	showNextComponent = (playerOne, playerTwo) => {
+		// this.setState({showScores: true})
+		// alert('playerOne: ' + playerOne);
+        // alert('playerTwo: ' + playerTwo);
+		var config = {
+			headers: {'Access-Control-Allow-Origin': '*'}
+		};
+
+		axios.get('https://ukce.danjscott.co.uk/api/game')
+			.then((res) => {
+				this.setState({
+					playerOneName: playerOne, 
+					playerTwoName: playerTwo,
+					activePlayer: 'player_one',
+					gameId: res.data.id,
+					showScores: true,
+					websocketServerIp: res.data.vision_system_ip
+				});
+			});
+
+	}
+
 	start = () => {
-		let connection = new WebSocket('ws://localhost:8765');
+		let connection = new WebSocket('ws://' + this.state.websocketServerIp + ':8765');
 		let msg = 'start#' + this.state.gameId;
 		// alert(msg);
 		connection.onopen = () => {
@@ -147,26 +104,74 @@ class App extends Component {
 			// alert(msg)
 			connection.send(msg);
 			setInterval(this.getPoints, 3500);
+
 		}
+	}
+
+	async adjustScore(activePlayer, increment){
+		var data = {
+			'activePlayer': activePlayer,
+			'increment': increment
+		}
+
+		var res = await axios.post('https://ukce.danjscott.co.uk/api/game/manual_points/'  + this.state.gameId, data)
+		if(res.status === 200){
+			switch(activePlayer){
+				case 'player_one':
+					if(increment){
+						this.setState({
+							playerOnePoints: this.state.playerOnePoints + 1
+						});
+					}
+					else{
+						if(this.state.playerOnePoints > 0){
+							this.setState({
+								playerOnePoints: this.state.playerOnePoints - 1
+							});
+						}
+					}
+					break;
+				case 'player_two':
+					if(increment){
+						this.setState({
+							playerTwoPoints: this.state.playerTwoPoints + 1
+						});
+					}
+					else{
+						if(this.state.playerTwoPoints > 0){
+							this.setState({
+								playerTwoPoints: this.state.playerTwoPoints - 1
+							});
+						}
+					}
+					break;
+				default:
+					break;
+			}
+		}
+	}
+
+	endGame = () => {
+		this.setState({
+			players: [],
+			playerOneName: '',
+			playerOnePoints: 0,
+			playerTwoName: '',
+			playerTwoPoints: 0,
+			activePlayer: '',
+			gameId: 0,
+			showScores: false,
+			playerOneActive: true,
+			playerTwoActive: false,
+			websocketServerIp: ''
+		})
 	}
   
 	render() {
 		const players = this.state.players || [];
-		// console.log(players);
-		// console.log(players[1]);
-		// console.log(players[1]);
 		return (
 			<div className="App">
 				<Container className="main">
-
-				{/* <Row>
-					<Col sm={{size:4, offset: 4}}>
-					<div className="score-block">
-					<p className="player-name">{this.state.playerOneName}</p>
-					<p className="points-counter">{this.state.playerOnePoints}</p>
-					</div>
-					</Col>
-				</Row> */}
 				{
 					!this.state.showScores && (
 						<PlayerNameInput showNextComponent={this.showNextComponent}></PlayerNameInput>
@@ -175,43 +180,57 @@ class App extends Component {
 				{
 					(this.state.showScores) && (
 						<div>
-							<Button color="primary" onClick={this.start}>Start</Button>
+							<PlayerScore name={this.state.playerOneName} active={this.state.playerOneActive} score={this.state.playerOnePoints}/>
+							<Row>
+								<Col xs={{span:4, offset: 2}}>
+									<Button
+									onClick={() => this.adjustScore('player_one', true)}
+									color="warning"
+									className="inc-btn"
+									>+</Button>
+									<Button
+										onClick={() => this.adjustScore('player_one', false)}
+										color="warning"
+										className="dec-btn"
+									>-</Button>
+								</Col>
+							</Row>
+							<PlayerScore name={this.state.playerTwoName} active={this.state.playerTwoActive} score={this.state.playerTwoPoints}/>
+							<Row>
+								<Col xs={{span:4, offset: 2}}>
+									<Button
+									onClick={() => this.adjustScore('player_two', true)}
+									color="warning"
+									className="inc-btn"
+									>+</Button>
+									<Button
+										onClick={() => this.adjustScore('player_two', false)}
+										color="warning"
+										className="dec-btn"
+									>-</Button>
+								</Col>
+							</Row>
+							<Row>
+								<Col xs={2} sm={2}></Col>
+								<Col xs={{span:4}} sm={{span:4}}>
+									<Button color="success" onClick={this.start}>Start</Button>
+								</Col>
+								<Col xs={2} sm={2}></Col>
+								<Col xs={{span:4}} sm={{span:4}}>
+									<Button color="primary" onClick={this.changePlayer}>Change Player</Button>
+								</Col>
+							</Row>
 							<br/>
-							<br/>
-							<Button color="primary" onClick={this.changePlayer}>Change Player</Button>
-							<PlayerScore name={this.state.playerOneName} score={this.state.playerOnePoints}/>
-							{/* <PlayerScore name={this.state.players[0].name} score={this.state.players[0].points}/> */}
-							<Row></Row>
-							{/* <PlayerScore name={this.state.players[0].name} score={this.state.players[0].points}/> */}
-							<PlayerScore name={this.state.playerTwoName} score={this.state.playerTwoPoints}/>
-							{/* <PlayerScore name={this.state.players[1].name} score={this.state.players[1].points}/> */}
+							<Row>
+								<Col xs={{size:4, offset: 4}} sm={{size:4, offset: 4}}>
+									<Button color="danger" onClick={this.endGame}>End Game</Button>
+								</Col>
+							</Row>
+
 						</div>
 					)
 				}
-
-
-				{/* <Row>
-					<Col sm={{size:4, offset: 4}}>
-						<div className="score-block">
-							<p className="player-name">{this.state.playerTwoName}</p>
-							<p className="points-counter">{this.state.playerTwoPoints}</p>
-						</div>
-					</Col>
-				</Row> */}
 				</Container>
-				{/* <header className="App-header">
-				<p>
-					Edit <code>src/App.js</code> and save to reload.
-				</p>
-				<a
-					className="App-link"
-					href="https://reactjs.org"
-					target="_blank"
-					rel="noopener noreferrer"
-				>
-					Learn
-				</a>
-				</header> */}
 			</div>
 		);
 	}
