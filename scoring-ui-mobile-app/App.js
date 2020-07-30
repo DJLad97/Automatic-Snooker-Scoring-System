@@ -35,24 +35,10 @@ export default class App extends React.Component {
 		axios.get('https://ukce.danjscott.co.uk/api/game/player_points/' + this.state.gameId)
 			.then((res) => {
 				console.log(res.data);
-				// let dbPlayerOnePoints = res.data['player_one_points']; 
-				// let dbPlayerTwoPoints = res.data['player_two_points']; 
 				this.setState({
 					playerOnePoints: res.data['player_one_points'],
 					playerTwoPoints: res.data['player_two_points']
 				});
-				// const points = res.data.points;
-				// console.log('points: ' + points)
-				// switch(this.state.activePlayer){
-				// 	case 'player_one':
-				// 		this.setState({playerOnePoints: points});
-				// 		break;
-				// 	case 'player_two':
-				// 		this.setState({playerTwoPoints: points});
-				// 		break;
-				// 	default:
-				// 		break;
-				// }
 			});
 	}
 
@@ -76,9 +62,6 @@ export default class App extends React.Component {
 	}
 
 	showNextComponent = (playerOne, playerTwo) => {
-		// this.setState({showScores: true})
-		// alert('playerOne: ' + playerOne);
-        // alert('playerTwo: ' + playerTwo);
 		var config = {
 			headers: {'Access-Control-Allow-Origin': '*'}
 		};
@@ -99,7 +82,6 @@ export default class App extends React.Component {
 	}
 
 	start = () => {
-		// alert(this.state.websocketServerIp);
 		let connection = new WebSocket('ws://' + this.state.websocketServerIp + ':8765');
 		let msg = 'start#' + this.state.gameId;
 		connection.onopen = () => {
@@ -258,23 +240,17 @@ const styles = StyleSheet.create({
 	},
 	scoreBlock: {
 		alignItems: 'center',
-		// marginTop: 5
 	},
 	playerName: {
-		// font-size: calc(100px + 2vmin);
 		color: '#fff',
 		fontSize: 78,
-		// marginTop: 80
 	},
 	
 	playerPoints: {
 		color: '#fff',
 		fontSize: 108,
-		// marginTop: 50
 	},
 	btnContainer: {
-		// paddingTop: 25,
-		// paddingBottom: 25,
 		flexWrap: 'wrap', 
         alignItems: 'flex-start',
 		flexDirection: 'row',
@@ -282,12 +258,9 @@ const styles = StyleSheet.create({
 		paddingTop: 50
 	},
 	btnContainerTwo: {
-		// paddingTop: 25,
-		// paddingBottom: 25,
 		flexWrap: 'wrap', 
         alignItems: 'flex-start',
 		flexDirection: 'row',
-		// justifyContent: 'space-between',
 	},
 	btn: {
 		margin: 10,
@@ -299,12 +272,9 @@ const styles = StyleSheet.create({
 		width: '30%'
 	},
 	endBtn: {
-		// margin: auto
-		// flex: 1,
 		marginLeft: 10,
 		marginRight: 10,
 		marginTop: 25,
 		width: '95%',
-		// alignItems: 'flex-start'
 	}
 });
