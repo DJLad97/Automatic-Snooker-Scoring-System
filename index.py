@@ -1,10 +1,6 @@
 #!/usr/bin/env python
 
 
-# Talk about the different lighting used
-# Get the outer contour
-# Try and get size of contour to determine if what is found is ball
-
 import cv2
 import numpy as np
 import math
@@ -32,19 +28,8 @@ from dotenv import load_dotenv
 
 def computerVisionSystem(gameId):
 
-    # query = '''SELECT * FROM tempTable;'''
-    # data = pd.read_sql_query(query, conn)
-    # print(data)
-
-    # Create a VideoCapture object and read from input file
-    # If the input is the camera, pass 0 instead of the video file name
-
-    # cap = cv2.VideoCapture("udp://127.0.0.1:10000")
-    # cap = cv2.VideoCapture("ball-clump-test.mov")
-    # cap = cv2.VideoCapture("game6.mov")
     cap = cv2.VideoCapture("game5.mov")
     # cap = cv2.VideoCapture(0)
-    # cap = cv2.VideoCapture('/Users/dan/Downloads/snooker-game2.mp4')
 
     # Check if camera opened successfully
     if (cap.isOpened() == False):
@@ -53,92 +38,24 @@ def computerVisionSystem(gameId):
     tableLower = (47, 100, 100)
     tableUpper = (67, 255, 255)
     lower = {
-    #   'red':    (166,84,141),  # Video game colours
-    #   'red':    (0,176,154), # HSV (old)
-    #   'red':    (0,170,0), # HSV (old)
       'red':    (0,156,137), # HSV
-    # 'red':    (0,171,84), # YCrCb (old)
-    # 'red':    (48,184,37), # YCrCb
-    #   'yellow': (23,59,119), # Video game colours
-    #   'yellow': (11,139,215), # HSV (old)
       'yellow': (19,121,91), # HSV
-    #   'yellow': (170,145,20), # YCrCb (old)
-    #   'yellow': (209,131,0), # YCrCb
-    # # #   'green':  (66,122,129), # Video game colours
-    # #   'green':  (57,70,89), # HSV (old)
-      'green':  (53,119,1), # HSV 
-    #   'green':  (91,104,101), # YCrCb (old)
-    #   'green':  (42,88,62), # YCrCb
-    # # #   'brown':  (0,29,0), # Video game colours
-    # #   'brown':  (0,41,49), # HSV (old)
+      'green':  (53,119,1), # HSV
       'brown':  (0,114,93), # HSV
-    #   'brown':  (50,132,103), # YCrCb (old)
-    #   'brown':  (68,32,96), # YCrCb
-    # # #   'blue':   (97,100,117), # Video game colours
-    # #   'blue':   (87,122,111), # HSV (old)
-    #   'blue':   (91,129,102), # HSV
       'blue':   (107,156,137), # HSV
-    #   'blue':   (60,78,147), # YCrCb (old)
-    #   'blue':   (52,70,168), # YCrCb
-    # # #   'pink':   (141,40,200), # Video game colours
-    # #   'pink':   (169,76,149), # HSV (old)
-      'pink':   (0,80,200), # HSV 
-    #   'pink':   (96,242,150), # YCrCb (old)
-    #   'pink':   (187,133,103), # YCrCb
-    # # #   'black':  (53,26,0), # Video game colours
-    # #   'black':  (103,56,16), # HSV (old)
-    #   'black':  (65,31,0), # HSV 
-    #   'black':  (101,35,6), # HSV 
-    #   'black':  (103,56,16), # YCrCb (old)
-    #   'black':  (0,96,84), # YCrCb
-    # 'white': (223,108,118) #YCrCb
-    'white': (0,0,200) #HSV
+      'pink':   (0,80,200), # HSV
+      'white': (0,0,200) #HSV
     }
-    # Lower bounds: [101  35   6] black
 
     upper = {
-    #   'red':    (179,255,255), # Video game colours
-    #   'red':    (35,237,208), # HSV (old)
-    #   'red':    (16,255,255), # HSV (old)
       'red':    (15,255,255), # HSV
-    # 'red':    (110,255,255), # YCrCb (old)
-    # 'red':    (255,255,255), # YCrCb
-    #   'yellow': (50,255,255), # Video game colours
-    #   'yellow': (169,227,255), # HSV (old)
-      'yellow': (47,240,255), # HSV 
-    #   'yellow': (254,220,73), # YCrCb (old)
-    #   'yellow': (246,155,102), # YCrCb
-    # # #   'green':  (86,255,255), # Video game colours
-    # #   'green':  (82,96,138), # HSV (old)
-      'green':  (80,255,249), # HSV 
-    #   'green':  (138,115,132), # YCrCb (old)
-    #   'green':  (129,112,130), # YCrCb
-    # # #   'brown':  (48,174,143), # Video game colours
-    # #   'brown':  (13,204,145), # HSV (old)
-      'brown':  (30,222,150), # HSV 
-    #   'brown':  (103,166,122), # YCrCb (old)
-    #   'brown':  (129,165,117), # YCrCb
-    # # #   'blue':   (117,255,255), # Video game colours
-    # #   'blue':   (162,255,255), # HSV (old)
-    #   'blue':   (130,234,223), # HSV 
-      'blue':   (179,255,255), # HSV 
-    #   'blue':   (126,112,196), # YCrCb (old)
-    #   'blue':   (135,115,255), # YCrCb
-    # # #   'pink':   (169,192,255), # Video game colours
-    # #   'pink':   (176,199,255), # HSV (old)
-      'pink':   (179,130,255), # HSV 
-    #   'pink':   (185,242,150), # YCrCb (old)
-    #   'pink':   (234,178,255), # YCrCb
-    # # #   'black':  (120,120,75), # Video game colours
-    # #   'black':  (133,156,88), # HSV (old)
-    #   'black':  (117,127,112), # HSV 
-    #   'black':  (132,141,129), # HSV 
-    #   'black':  (133,156,88), # YCrCb (old)
-    #   'black':  (49,126,179), # YCrCb
-    # 'white': (255,129,137) #YCrCb
-    'white': (78,40,255) # HSV
+      'yellow': (47,240,255), # HSV
+      'green':  (80,255,249), # HSV
+      'brown':  (30,222,150), # HSV
+      'blue':   (179,255,255), # HSV
+      'pink':   (179,130,255), # HSV
+      'white': (78,40,255) # HSV
     }
-    # Upper bounds: [132 141 129] black
 
 
     ballCoords = {
@@ -237,17 +154,17 @@ def computerVisionSystem(gameId):
     x = []
     y = []
 
-    
+
     cX = 0
     cY = 0
 
-    # initialFrame = 8325 
+    # initialFrame = 8325
     # initialFrame = 10500
     # initialFrame = 2500
     initialFrame = 500
     # initialFrame = 500
-    # initialFrame = 9000 
-    # initialFrame = 0 
+    # initialFrame = 9000
+    # initialFrame = 0
     frameFromVideoStart = 0
     # initialFrame = 1600 # Just before yellow is potted
     # initialFrame = 5250
@@ -328,7 +245,7 @@ def computerVisionSystem(gameId):
             mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernal)
             # cv2.imshow(key, mask)
 
-            # Add the blur and the threshold function to get make the results more circular 
+            # Add the blur and the threshold function to get make the results more circular
             # They are currently not in as they're not needed at this stage and just slow things down
             # mask = cv2.GaussianBlur(mask, (7,7), 0)
             # kernal = np.ones((6,6), np.uint8)
@@ -338,7 +255,7 @@ def computerVisionSystem(gameId):
             # contours = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)[-2]
             contours = cv2.findContours(finalMask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)[-2]
             i = 0
-            
+
             if(key == "red" and calculateBallSizes):
                 averagePeremiter, maxPerimeter = getAverageAndMaxPerimeter(contours)
                 calculateBallSizes = False
@@ -347,7 +264,7 @@ def computerVisionSystem(gameId):
 
             connectedContours = False
             for c in contours:
-                
+
                 numberOfBallsConnected = 0
                 if(key == 'yellow'):
                     previousYellowX = cX
@@ -370,7 +287,7 @@ def computerVisionSystem(gameId):
                 # TODO: Automatically detect average perimeters and largest contour size
                 if(key == 'red'):
                     currentContourSize = cv2.arcLength(c, True)
-                    # The largest contour size is around 40 so just add a bit more 
+                    # The largest contour size is around 40 so just add a bit more
                     cv2.circle(frame, (cX, cY), 5, (255,255,255), -1)
                     if(currentContourSize > (averagePeremiter + 5)):
                         # cv2.putText(frame, str(key), (cX, cY), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,255,), 2)
@@ -384,16 +301,16 @@ def computerVisionSystem(gameId):
                         # cv2.circle(frame, (cX, cY), 5, (255,255,255), -1)
                         # cv2.putText(frame, str(key), (cX, cY), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,255,0), 2)
                         pass
-                else: 
+                else:
                     cv2.circle(frame, (cX, cY), 5, (255,255,255), -1)
                     cv2.putText(frame, str(key), (cX, cY), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,255,0), 2)
 
                 i += 1
-                    
+
                 if(checkBallCount):
                     # When counting the number of balls make sure to reset the ball count at the beginning of the while loop
                     if(key == 'red'):
-                        # Need check if connected contours 
+                        # Need check if connected contours
                         if(connectedContours):
                             redCount += numberOfBallsConnected
                         redCount += 1
@@ -404,7 +321,7 @@ def computerVisionSystem(gameId):
 
                     if(key == 'green'):
                         greenCount += 1
-                    
+
                     if(key == 'brown'):
                         brownCount += 1
 
@@ -425,7 +342,7 @@ def computerVisionSystem(gameId):
                     ballMoving[key] = True
                 else:
                     ballMoving[key] = False
-        
+
 
         if(checkBallCount):
             # Every 5 frames check if the number of reds detected has changed
@@ -433,10 +350,10 @@ def computerVisionSystem(gameId):
             if(redCount != previousRedCount):
                 # If it has (and it's not the first frame otherwise the confidence value will be incorrect) increment the confidence
                 if(currentFrame != initialFrame + 1):
-                    # The higher the number means less confidence in the pot as redCount has changed value a lot 
+                    # The higher the number means less confidence in the pot as redCount has changed value a lot
                     # The constant changing of value means something has temporarly obstructed view of the ball
                     ballPottedConfidence += 1
-                
+
             if(yellowCount != previousYellowCount):
                 if(currentFrame != initialFrame + 1):
                     yellowPotConfidence += 1
@@ -481,7 +398,7 @@ def computerVisionSystem(gameId):
             # That means a ball has been obscured for a long enough time for it to be detected as potted
             # But obviously wasn't potted and must have just been covered by a player taking a shot
             # False pot detected (i.e hand cover etc)
-            
+
             if(redCount > totalReds):
                 print("false pot detected on " + str(numberOfRedsPotted) + " balls")
                 totalReds += numberOfRedsPotted
@@ -501,9 +418,9 @@ def computerVisionSystem(gameId):
                     updatePoints(gameId, numberOfRedsPotted)
                     # difference = frameFromVideoStart - ballDetectionRate
                     # ballDetectionRate += difference
-                
+
                 ballPottedConfidence = 0
-            
+
             if(yellowCount < 1 and yellowPotConfidence <= 2 and not yellowPotted and ballMoving['yellow']):
                 print('yellow potted')
                 yellowPotted = True
@@ -519,7 +436,7 @@ def computerVisionSystem(gameId):
                 updatePoints(gameId, 3)
 
             greenPotConfidence = 0
-            
+
             if(brownCount < 1 and brownPotConfidence <= 2 and not brownPotted and ballMoving['brown']):
                 print('brown potted')
                 brownPotted = True
@@ -535,7 +452,7 @@ def computerVisionSystem(gameId):
                 updatePoints(gameId, 5)
 
             bluePotConfidence = 0
-            
+
             if(pinkCount < 1 and pinkPotConfidence <= 2 and not pinkPotted and ballMoving['pink']):
                 print('pink potted')
                 pinkPotted = True
@@ -553,7 +470,7 @@ def computerVisionSystem(gameId):
             whitePotConfidence = 0
 
         cv2.imshow('Computer Vision System', frame)
-        
+
         if cv2.waitKey(25) & 0xFF == ord('q'):
             break
 
@@ -565,11 +482,11 @@ def computerVisionSystem(gameId):
 
                 if key2 == ord('p'):
                     break
-        
+
         frameFromVideoStart += 1
 
     cv2.destroyAllWindows()
-     # Connect to database using ssh keys 
+     # Connect to database using ssh keys
     cap.release()
 
 def getAverageAndMaxPerimeter(contours):
@@ -579,7 +496,7 @@ def getAverageAndMaxPerimeter(contours):
         currentContourSize = cv2.arcLength(c, True)
         averagePeremiter += currentContourSize
         ballPerimeters.append(currentContourSize)
-    
+
     averageSize = np.average(ballPerimeters)
     maxPerimeter = max(ballPerimeters)
 
@@ -590,24 +507,19 @@ def getActivePlayer(gameId):
     print(res.json())
     activePlayer = res.json()['active_player']
     return activePlayer
-    # selectQuery = '''SELECT active_player FROM games WHERE id = %s;'''
-    # cursor.execute(selectQuery, (gameId))
-    # activePlayer = cursor.fetchone()[0]
-
-    # return activePlayer
 
 def updatePoints(gameId, points, falsePot=False, whitePotted=False):
     activePlayer = getActivePlayer(gameId)
     data = {
         'activePlayer': activePlayer,
         'points': points
-    }         
+    }
     url = 'https://ukce.danjscott.co.uk/api/game/update/' + str(gameId)
     if(falsePot):
-        url += '?falsePot=true'    
+        url += '?falsePot=true'
     if(whitePotted):
-        url += '?whitePotted=true'     
-    print(url)   
+        url += '?whitePotted=true'
+    print(url)
     print(data)
     res = requests.post(url, data=data)
     print(res)
@@ -625,7 +537,7 @@ async def start(websocket, path):
 
 def main():
     # computerVisionSystem(169)
-    machineIp = socket.gethostbyname(socket.gethostname()) 
+    machineIp = socket.gethostbyname(socket.gethostname())
     print(socket.gethostbyname(socket.gethostname()))
     data = {
         'ip': machineIp
@@ -639,6 +551,6 @@ def main():
         asyncio.get_event_loop().run_forever()
     else:
         print('Unable to start')
-        
+
 
 if __name__ == "__main__": main()
